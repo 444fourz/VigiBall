@@ -9,15 +9,23 @@ DB_PATH = os.path.join(CURRENT_DIR, '..', 'vigiball.db')
 
 # Define the metrics for each position, and whether HIGHER is better (True) or LOWER is better (False)
 STAT_PROFILES = {
-    'FW': {
+    'FW': { # Wingers and Strikers (Judge on Output)
         'xg': True, 'npg': True, 'xag': True, 'gca90': True,
-        'prgc': True, 'succ_pct': True, 'sot_pct': True, 'touches_box': True
+        'prgc': True, 'succ_pct': True, 'touches_box': True # Removed sot_pct to help wingers
     },
-    'MF': {
+    'AM': { # Attacking Midfielders (Judge on Playmaking)
+        'xag': True, 'kp': True, 'prgp': True, 'gca90': True,
+        'prgc': True, 'touches_box': True # Removed efficiency stats like cmp_pct
+    },
+    'CM': { # Box-to-Box (Standard)
         'xag': True, 'kp': True, 'cmp_pct': True, 'prgp': True,
         'tkl_pct': True, 'interceptions': True, 'miscontrols': False, 'dispossessed': False
     },
-    'DF': {
+    'DM': { # Defensive Destroyers (Rice, Rodri) - HEAVY DEFENSIVE FOCUS
+        'cmp_pct': True, 'tkl_pct': True, 'interceptions': True, 'recoveries': True,
+        'prg_pass_dist': True, 'blocks': True, 'tkl_int': True, 'clearances': True
+    },
+    'DF': { # Centre Backs / Full Backs
         'aerial_won_pct': True, 'def_act_att_3rd': True, 'recoveries': True,
         'prg_pass_dist': True, 'blocks': True, 'tkl_int': True, 'clearances': True
     },
@@ -27,36 +35,79 @@ STAT_PROFILES = {
     }
 }
 
-def get_primary_position(pos_string):
-    """Categorize the FBRef position string into our 4 main buckets."""
+def get_primary_position(pos_string, player_name):
+    """Categorize the FBRef position string, with manual overrides for the experiment."""
+    
+    # 1. EXPERIMENTAL OVERRIDES
+    # Force our specific 10 players into the perfect mathematical buckets
+    overrides = {
+        "Martin Ødegaard": "AM",
+        "Cole Palmer": "AM",
+        "Kevin De Bruyne": "AM",
+        "Declan Rice": "DM",
+        "Rodri": "DM",
+        "João Palhinha": "DM",
+        "Bruno Fernandes": "AM"
+    }
+    
+    for name, pos in overrides.items():
+        if name in player_name:
+            return pos
+            
+    # 2. DYNAMIC PARSING (For everyone else)
     pos_string = str(pos_string).upper()
     if 'GK' in pos_string: return 'GK'
+    if 'MF,FW' in pos_string or 'FW,MF' in pos_string: return 'AM'
+    if 'MF,DF' in pos_string or 'DF,MF' in pos_string: return 'DM'
     if 'FW' in pos_string: return 'FW'
-    if 'MF' in pos_string: return 'MF'
+    if 'MF' in pos_string: return 'CM' 
     if 'DF' in pos_string: return 'DF'
-    return 'MF' # Fallback
+    return 'CM' # Fallback
 
-def calculate_valuation(player_name, season="2025-2026"):
+def calculate_valuation(player_name):
     """
     Calculates the P-Score and Market Value for a given player.
     """
     conn = sqlite3.connect(DB_PATH)
-    
+
     # 1. Fetch the target player
-    query = "SELECT * FROM players WHERE name LIKE ? AND season = ?"
-    player_df = pd.read_sql(query, conn, params=(player_name, season))
+    query = "SELECT * FROM players WHERE name LIKE ? AND season IN ('2024-2025', '2025-2026')"
+    player_df = pd.read_sql(query, conn, params=(f"%{player_name}%",))
     
     if player_df.empty:
         conn.close()
-        return {"error": f"Player '{player_name}' not found."}
-        
-    player = player_df.iloc[0]
-    pos_group = get_primary_position(player['pos'])
+        return {"error": f"Player '{player_name}' not found. Please try again."}
+          
+    # 2. Performance blending and Biography lock
+    # Calculate the mean of numeric performance stats across all available seasons
+    player = player_df.mean(numeric_only=True)
+    num_records = len(player_df)
+
+    if num_records > 1:
+        # For Veterans (2+ seasons): Take the latest data from index 1
+        latest_record = player_df.iloc[1]
+    else:
+        # For Fresh Players (1 season): Take the only data available at index 0
+        latest_record = player_df.iloc[0]
+
+    # 3. OVERWRITE: Force the biographical facts into the 'player' object
+    player['name'] = latest_record['name']
+    player['pos'] = latest_record['pos']
+    player['squad'] = latest_record['squad']
+    player['age'] = latest_record['age']
+    # ---------------------------
+
+    pos_group = get_primary_position(player['pos'], player['name'])
     metrics = STAT_PROFILES[pos_group]
     
     # 2. Fetch the Peer Group (Same position group, >= 5 matches to remove noise)
-    peer_query = f"SELECT * FROM players WHERE pos LIKE '%{pos_group}%' AND season = ? AND n90s >= 5.0"
-    peers_df = pd.read_sql(peer_query, conn, params=(season,))
+    # Map our custom pos_groups back to database tags so the SQL query actually finds people
+    db_search_tag = pos_group
+    if pos_group in ['AM', 'CM', 'DM']:
+        db_search_tag = 'MF'
+        
+    peer_query = f"SELECT * FROM players WHERE pos LIKE '%{db_search_tag}%' AND season IN ('2024-2025', '2025-2026') AND n90s >= 5.0"
+    peers_df = pd.read_sql(peer_query, conn)
     conn.close()
 
     # 3. Calculate Percentile Ranks
@@ -121,6 +172,7 @@ def calculate_valuation(player_name, season="2025-2026"):
         "name": player['name'],
         "position_group": pos_group,
         "age": round(age, 1),
+        "squad": player['squad'],
         "p_score": round(p_score, 2),
         "market_value_m": round(market_value, 2),
         "percentiles": {k: round(v * 100, 1) for k, v in percentiles.items()}
@@ -135,16 +187,16 @@ if __name__ == "__main__":
     conn.close()
     # --------------------
 
-    test_player = "Rodri" 
-    result = calculate_valuation(test_player, season="2024-2025")
+    test_player = "Cole Palmer" 
+    result = calculate_valuation(test_player)
     
     if "error" in result:
         print(result["error"])
     else:
         print(f"\n--- Valuation Report: {result['name']} ---")
-        print(f"Position: {result['position_group']} | Age: {result['age']}")
+        print(f"Position: {result['position_group']} | Age: {result['age']} | Squad: {result['squad']}")
         print(f"P-Score:  {result['p_score']} / 10")
-        print(f"AI Value: £{result['market_value_m']}m")
+        print(f"VigiBall Value: £{result['market_value_m']}m")
         print("Stat Breakdown (Percentiles):")
         for stat, pct in result['percentiles'].items():
             print(f"  - {stat}: {pct}th percentile")
