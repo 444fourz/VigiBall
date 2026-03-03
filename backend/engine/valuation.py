@@ -165,7 +165,7 @@ def calculate_valuation(player_name):
     # Base Value: Every point of P-Score is worth £5m, plus a basic £5m floor.
     base_value_millions = (p_score * 5.0) + 5.0 
     
-    # The Elite Score is added as the 'inflation/premium'
+    # The Elite Score is added as the hidden premium
     market_value = base_value_millions + elite_score
 
     return {
@@ -178,16 +178,13 @@ def calculate_valuation(player_name):
         "percentiles": {k: round(v * 100, 1) for k, v in percentiles.items()}
     }
 
-# --- TEST THE ENGINE ---
 if __name__ == "__main__":
-    # --- SANITY CHECK ---
     conn = sqlite3.connect(DB_PATH)
     count = pd.read_sql("SELECT count(*) as total FROM players", conn).iloc[0]['total']
     print(f"Total players in database: {count}")
     conn.close()
-    # --------------------
 
-    test_player = "Cole Palmer" 
+    test_player = "Gabriel Martinelli" 
     result = calculate_valuation(test_player)
     
     if "error" in result:
