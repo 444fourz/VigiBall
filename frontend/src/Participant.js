@@ -70,9 +70,34 @@ React.useEffect(() => {
             </div>
 
 
-            <input type="number" className="w-full bg-slate-800 p-4 rounded-xl mb-4 border border-slate-700" 
-                   placeholder="Your Initial Market Value (£M)" onChange={(e) => setGuess(e.target.value)} />
-            <button onClick={fetchPlayerData} className="w-full bg-sky-500 py-4 rounded-xl font-black text-slate-950">PROCEED TO DEEP ANALYSIS</button>
+           {/* Phase 1 Input Section */}
+<div className="space-y-4">
+  <input 
+    type="number" 
+    className="w-full bg-slate-800 p-4 rounded-xl border border-slate-700 text-white outline-none focus:ring-2 focus:ring-sky-500" 
+    placeholder="Your Initial Market Value (£M)" 
+    value={guess}
+    onChange={(e) => setGuess(e.target.value)} 
+  />
+
+  <button 
+    onClick={fetchPlayerData} 
+    disabled={!guess || guess <= 0} // Lock button if empty or 0
+    className={`w-full py-4 rounded-xl font-black transition-all uppercase tracking-widest ${
+      !guess || guess <= 0 
+        ? 'bg-slate-700 text-slate-500 cursor-not-allowed' // Style for disabled
+        : 'bg-sky-500 text-slate-950 hover:bg-sky-400 shadow-lg shadow-sky-500/20' // Style for active
+    }`}
+  >
+    Proceed to Deep Analysis
+  </button>
+  
+  {(!guess || guess <= 0) && (
+    <p className="text-[10px] text-center text-slate-500 italic mt-2">
+      Please enter a valuation to continue
+    </p>
+  )}
+</div>
           </div>
         )}
 
@@ -113,9 +138,19 @@ React.useEffect(() => {
             <p className="text-slate-400 text-sm mb-8">Having reviewed the basic stats, deep analytics, and AI valuation, what is your final bid?</p>
             <input type="number" className="w-full bg-slate-800 p-4 rounded-xl mb-6 border border-slate-700 text-center text-2xl font-bold" 
                    placeholder="Final Value (£M)" onChange={(e) => setFinalBid(e.target.value)} />
-            <button onClick={submitResults} className="w-full bg-green-500 py-4 rounded-xl font-black text-slate-950">SUBMIT EXPERIMENT DATA</button>
-          </div>
-        )}
+            <button 
+      onClick={submitResults} 
+      disabled={!finalBid || finalBid <= 0}
+      className={`w-full py-4 rounded-xl font-black transition-all ${
+        !finalBid || finalBid <= 0
+          ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+          : 'bg-green-500 text-slate-950 hover:bg-green-400'
+      }`}
+    >
+      SUBMIT EXPERIMENT DATA
+    </button>
+  </div>
+)}
 
         {/* PHASE 4: SUCCESS */}
         {phase === 4 && (
