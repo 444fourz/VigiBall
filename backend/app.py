@@ -21,7 +21,7 @@ def save_result():
     data = request.json
     file_exists = os.path.isfile('experiment_results.csv')
     
-    with open('experiment_results.csv', mode='a', newline='') as f:
+    with open('experiment_results.csv', mode='a', newline='', encoding='utf-8-sig') as f:
         writer = csv.DictWriter(f, fieldnames=['player', 'initial_guess', 'ai_value', 'final_bid', 'p_score'])
         if not file_exists:
             writer.writeheader()

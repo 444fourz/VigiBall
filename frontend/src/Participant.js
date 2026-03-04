@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const PLAYERS = ["Cole Palmer", "Martin Odegaard", "William Saliba", "Mohamed Salah", "Kobbie Mainoo", "Antony", "Bryan Mbeumo", "Evan Ferguson", "Erling Haaland", "Chris Wood"];
+const PLAYERS = ["Cole Palmer", "Martin Ødegaard", "William Saliba", "Mohamed Salah", "Kobbie Mainoo", "Antony", "Bryan Mbeumo", "Evan Ferguson", "Erling Haaland", "Chris Wood"];
 
 function Participant() {
   const [player, setPlayer] = useState(PLAYERS[0]);
