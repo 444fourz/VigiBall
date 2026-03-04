@@ -3,11 +3,19 @@ from flask_cors import CORS
 from engine.valuation import calculate_valuation
 import csv
 import os
+import pandas as pd
 
 app = Flask(__name__)
 CORS(app) # Allows React to talk to Flask
 
-
+@app.route('/api/get_results', methods=['GET'])
+def get_results():
+    if not os.path.exists('experiment_results.csv'):
+        return jsonify([])
+    # Use pandas to read the CSV and send it back as JSON
+    df = pd.read_csv('experiment_results.csv')
+    return df.to_json(orient='records')
+    
 @app.route('/api/save_result', methods=['POST'])
 def save_result():
     data = request.json
