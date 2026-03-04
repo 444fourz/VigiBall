@@ -90,11 +90,22 @@ def calculate_valuation(player_name):
         # For Fresh Players (1 season): Take the only data available at index 0
         latest_record = player_df.iloc[0]
 
-    # 3. OVERWRITE: Force the biographical facts into the 'player' object
+    # 3. OVERWRITE: Force biographical facts and raw stats
+    # latest_record is a Series, so .iloc[index] gets the value by position
     player['name'] = latest_record['name']
     player['pos'] = latest_record['pos']
     player['squad'] = latest_record['squad']
     player['age'] = latest_record['age']
+
+    # Using positions based on your schema: MP(Index 8), Gls(Index 12), Ast(Index 13)
+    # We use .values if iloc fails on a Series
+    raw_values = latest_record.values 
+    
+    player['matches'] = int(float(raw_values[8])) if raw_values[8] else 0
+    player['goals'] = int(float(raw_values[12])) if raw_values[12] else 0
+    player['assists'] = int(float(raw_values[13])) if raw_values[13] else 0
+
+
     # ---------------------------
 
     pos_group = get_primary_position(player['pos'], player['name'])
@@ -169,10 +180,13 @@ def calculate_valuation(player_name):
     market_value = base_value_millions + elite_score
 
     return {
-        "name": player['name'],
+        "name": str(player['name']),
         "position_group": pos_group,
-        "age": round(age, 1),
-        "squad": player['squad'],
+        "age": round(float(player['age']), 1),
+        "squad": str(player['squad']),
+        "matches": player['matches'],
+        "goals": player['goals'],
+        "assists": player['assists'],
         "p_score": round(p_score, 2),
         "market_value_m": round(market_value, 2),
         "percentiles": {k: round(v * 100, 1) for k, v in percentiles.items()}
