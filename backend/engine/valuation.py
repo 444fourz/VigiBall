@@ -5,7 +5,25 @@ import os
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(CURRENT_DIR, '..', 'vigiball.db')
+CSV_PATH_2425 = r"C:\Users\nayee\OneDrive - Aston University\Desktop\CS3\FYP\FYP Workspace\VigiBall\backend\players_data-2024_2025.csv"
+CSV_PATH_2526 = r"C:\Users\nayee\OneDrive - Aston University\Desktop\CS3\FYP\FYP Workspace\VigiBall\backend\players_data-2025_2026.csv"
 
+
+def get_raw_csv_stats(player_name):
+    """Helper to sum raw stats from CSV files."""
+    total_mp, total_gls, total_ast = 0, 0, 0
+    
+    for path in [CSV_PATH_2425, CSV_PATH_2526]:
+        if os.path.exists(path):
+            df_raw = pd.read_csv(path)
+            # Find the player (using case-insensitive search to be safe)
+            p_match = df_raw[df_raw['Player'].str.contains(player_name, case=False, na=False)]
+            if not p_match.empty:
+                total_mp += p_match['MP'].sum()
+                total_gls += p_match['Gls'].sum()
+                total_ast += p_match['Ast'].sum()
+    
+    return int(total_mp), int(total_gls), int(total_ast)
 
 # Define the metrics for each position, and whether HIGHER is better (True) or LOWER is better (False)
 STAT_PROFILES = {
@@ -65,6 +83,18 @@ def get_primary_position(pos_string, player_name):
     return 'CM' # Fallback
 
 def calculate_valuation(player_name):
+    # 1. Get RAW stats for Phase 1 from CSVs
+    raw_mp, raw_gls, raw_ast = get_raw_csv_stats(player_name)
+
+    # 2. Get ADVANCED stats for Phase 2 from SQL
+    conn = sqlite3.connect(DB_PATH) # Ensure DB_PATH is defined at the top of your file
+    query = "SELECT * FROM players WHERE name LIKE ? AND season IN ('2024-2025', '2025-2026')"
+    player_df = pd.read_sql(query, conn, params=(f"%{player_name}%",))
+    
+    if player_df.empty:
+        conn.close()
+        return {"error": "Player not found"}
+    conn.close()
     """
     Calculates the P-Score and Market Value for a given player.
     """
@@ -91,21 +121,27 @@ def calculate_valuation(player_name):
         latest_record = player_df.iloc[0]
 
     # 3. OVERWRITE: Force biographical facts and raw stats
-    # latest_record is a Series, so .iloc[index] gets the value by position
     player['name'] = latest_record['name']
     player['pos'] = latest_record['pos']
     player['squad'] = latest_record['squad']
     player['age'] = latest_record['age']
+# 1. Calculate the TOTALS across all seasons (24/25 + 25/26)
+    # This sums the columns for every row found in player_df
+    total_90s = player_df['n90s'].sum()
+    total_xg = player_df['xg'].sum()
+    total_xag = player_df['xag'].sum()
 
-    # Using positions based on your schema: MP(Index 8), Gls(Index 12), Ast(Index 13)
-    # We use .values if iloc fails on a Series
-    raw_values = latest_record.values 
-    
-    player['matches'] = int(float(raw_values[8])) if raw_values[8] else 0
-    player['goals'] = int(float(raw_values[12])) if raw_values[12] else 0
-    player['assists'] = int(float(raw_values[13])) if raw_values[13] else 0
+    # 2. Pin these aggregated totals to the player object
+    # We round to 1 decimal place for a clean UI
+    player['matches'] = round(float(total_90s), 1)
+    player['goals'] = round(float(total_xg), 1)
+    player['assists'] = round(float(total_xag), 1)
 
-
+    # Note: Biographical info like Age and Squad should still come from the LATEST season
+    latest_record = player_df.iloc[-1]
+    player['name'] = latest_record['name']
+    player['age'] = latest_record['age']
+    player['squad'] = latest_record['squad']
     # ---------------------------
 
     pos_group = get_primary_position(player['pos'], player['name'])
@@ -180,15 +216,14 @@ def calculate_valuation(player_name):
     market_value = base_value_millions + elite_score
 
     return {
-        "name": str(player['name']),
-        "position_group": pos_group,
-        "age": round(float(player['age']), 1),
-        "squad": str(player['squad']),
-        "matches": player['matches'],
-        "goals": player['goals'],
-        "assists": player['assists'],
-        "p_score": round(p_score, 2),
+        "name": player_name,
+        "matches": raw_mp,
+        "goals": raw_gls,
+        "assists": raw_ast,
         "market_value_m": round(market_value, 2),
+        "p_score": round(p_score, 2),
+        "age": round(float(player_df.iloc[-1]['age']), 1),
+        "squad": player_df.iloc[-1]['squad'],
         "percentiles": {k: round(v * 100, 1) for k, v in percentiles.items()}
     }
 
