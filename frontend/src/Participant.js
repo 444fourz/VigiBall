@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; // Added useEffect to imports
 
-const PLAYERS = ["Cole Palmer", "Martin Ødegaard", "William Saliba", "Mohamed Salah", "Kobbie Mainoo", "Antony", "Bryan Mbeumo", "Evan Ferguson", "Erling Haaland", "Chris Wood"];
+const PLAYERS = ["Cole Palmer", "Martin Ødegaard", "William Saliba", "Mohamed Salah", "Kobbie Mainoo", "Antony", "Bryan Mbeumo", "Bukayo Saka", "Erling Haaland", "Chris Wood"];
 
 function Participant() {
   const [player, setPlayer] = useState(PLAYERS[0]);
@@ -31,6 +31,7 @@ function Participant() {
   };
 
   const submitResults = async () => {
+    const bidToSave = finalBid || guess;
     await fetch('http://localhost:5000/api/save_result', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -43,6 +44,24 @@ function Participant() {
     });
     setPhase(4); 
   };
+
+  const [timeLeft, setTimeLeft] = useState(30); // 30-second countdown
+useEffect(() => {
+  if (phase === 3) {
+    if (timeLeft > 0) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      // 1. Timer hit zero - the overlay appears automatically
+      // 2. Wait 2 seconds so they can read the "Time Expired" message
+      const autoSubmitTimer = setTimeout(() => {
+        submitResults();
+      }, 2000);
+      
+      return () => clearTimeout(autoSubmitTimer);
+    }
+  }
+}, [phase, timeLeft]);
 
   const [activeNote, setActiveNote] = useState("");
 const [showNote, setShowNote] = useState(false);
@@ -171,33 +190,62 @@ useEffect(() => {
           </div>
         )}
 
-        {/* PHASE 3: FINAL VERDICT */}
+       {/* PHASE 3: FINAL VERDICT */}
 {phase === 3 && (
-  <div className="max-w-md mx-auto relative bg-slate-900 p-10 rounded-[2rem] border border-slate-800 text-center shadow-2xl animate-in fade-in zoom-in duration-300">
+  <div className="max-w-md mx-auto relative bg-slate-900 p-10 rounded-[2rem] border border-slate-800 text-center shadow-2xl animate-in fade-in zoom-in duration-300 overflow-hidden">
+    
+    {/* TIME EXPIRED OVERLAY: Appears only when timeLeft is 0 */}
+    {timeLeft === 0 && (
+      <div className="absolute inset-0 z-50 flex items-center justify-center">
+        {/* Blurred Backdrop */}
+        <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"></div>
+        
+        {/* Message Content */}
+        <div className="relative z-10 text-center animate-in fade-in zoom-in duration-300">
+          <div className="w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-2xl font-black text-white mb-1 uppercase tracking-tighter">Time Expired</h2>
+          <p className="text-slate-400 text-[10px] font-bold tracking-[0.2em] uppercase">
+            Finalizing Bid...
+          </p>
+        </div>
+      </div>
+    )}
+
+    {/* PHASE 3: TIMER DISPLAY */}
+    <div className="absolute top-6 left-6 flex flex-col items-center">
+      <div className={`text-[9px] font-black mb-1 ${timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-slate-500 uppercase tracking-widest'}`}>
+        Decision Window
+      </div>
+      <div className={`text-2xl font-mono font-black ${timeLeft <= 10 ? 'text-red-500' : 'text-white'}`}>
+        00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
+      </div>
+    </div>
     
     {/* EXTERNAL SCOUT'S NOTE: Positioned outside to the right */}
     <div className={`absolute top-0 -right-52 w-48 transition-all duration-1000 transform hidden md:block ${
       showNote ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
     }`}>
       <div className="bg-[#0f172a] border border-sky-500/40 p-4 rounded-2xl shadow-2xl text-left relative">
-        {/* HEADER */}
         <div className="flex items-center gap-2 mb-2 border-b border-slate-800 pb-2">
           <div className="w-1.5 h-1.5 bg-sky-500 rounded-full animate-pulse"></div>
           <span className="text-[9px] font-black text-sky-400 uppercase tracking-widest">
             Scout's Note
           </span>
         </div>
-
-        {/* MESSAGE */}
         <p className="text-slate-300 font-medium text-[10px] leading-relaxed italic">
           "{activeNote}"
         </p>
-
-        {/* INDICATOR LINE: Connects the note visually to the main card */}
         <div className="absolute top-8 -left-4 w-4 h-[1px] bg-sky-500/30"></div>
       </div>
     </div>
+
     <h2 className="text-xl font-bold mb-6 italic text-slate-400">Final Assessment</h2>
+
+    <div className="bg-slate-950 p-6 rounded-2xl mb-8 border border-slate-800/50 text-center">
+        <p className="text-[10px] text-slate-500 uppercase font-black mb-1">AI Calculated Market Value</p>
+        <p className="text-3xl font-black text-green-400">£{data?.market_value_m}M</p>
+    </div>
+
     <input 
       type="number" 
       className="w-full bg-slate-800 p-4 rounded-xl mb-6 border border-slate-700 text-center text-2xl font-bold focus:ring-2 focus:ring-sky-500 outline-none" 
