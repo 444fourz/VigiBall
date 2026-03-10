@@ -82,6 +82,33 @@ def get_primary_position(pos_string, player_name):
     if 'DF' in pos_string: return 'DF'
     return 'CM' # Fallback
 
+def generate_scout_note(name, pos, age, squad, market_value, p_score):
+    insights = []
+
+    # 1. Performance Insight (The "What")
+    if p_score >= 8.5:
+        insights.append("Elite statistical outlier.")
+    elif p_score <= 4.0:
+        insights.append("Underlying metrics declining.")
+    else:
+        insights.append("Consistent output for role.")
+
+    # 2. Market Context (The "Why")
+    big_six = ["Arsenal", "Manchester City", "Liverpool", "Manchester Utd", "Chelsea", "Tottenham"]
+    if squad in big_six:
+        insights.append("Big Six liquidity premium applied.")
+    
+    if age < 22:
+        insights.append("High ceiling/age-weighted value.")
+    elif age > 31:
+        insights.append("Veteran depreciation factored.")
+
+    # 3. Final verdict (The "Result")
+    insights.append(f"AI Baseline: £{market_value}M.")
+
+    # Join them with dots for a "Digital" look
+    return " // ".join(insights)
+
 def calculate_valuation(player_name):
     # 1. Get RAW stats for Phase 1 from CSVs
     raw_mp, raw_gls, raw_ast = get_raw_csv_stats(player_name)
@@ -143,10 +170,11 @@ def calculate_valuation(player_name):
     player['age'] = latest_record['age']
     player['squad'] = latest_record['squad']
     # ---------------------------
-
     pos_group = get_primary_position(player['pos'], player['name'])
+    age = float(player['age'])
+    squad = str(latest_record['squad'])
     metrics = STAT_PROFILES[pos_group]
-    
+
     # 2. Fetch the Peer Group (Same position group, >= 5 matches to remove noise)
     # Map our custom pos_groups back to database tags so the SQL query actually finds people
     db_search_tag = pos_group
@@ -214,9 +242,12 @@ def calculate_valuation(player_name):
     
     # The Elite Score is added as the hidden premium
     market_value = base_value_millions + elite_score
+    
+    scout_note = generate_scout_note(player_name, pos_group, age, squad, market_value, p_score)
 
     return {
         "name": player_name,
+        "scout_note": scout_note,
         "position": pos_group,
         "matches": raw_mp,
         "goals": raw_gls,

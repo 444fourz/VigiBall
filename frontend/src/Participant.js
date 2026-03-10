@@ -153,6 +153,18 @@ function Participant() {
             <p className="text-slate-400 text-sm mb-8">Having reviewed the basic stats, deep analytics, and AI valuation, what is your final bid?</p>
             <input type="number" className="w-full bg-slate-800 p-4 rounded-xl mb-6 border border-slate-700 text-center text-2xl font-bold" 
                    placeholder="Final Value (£M)" value={finalBid} onChange={(e) => setFinalBid(e.target.value)} />
+            {/* PHASE 3: Snappy AI Summary */}
+<div className="mb-6 bg-slate-950 border border-slate-800 p-4 rounded-xl text-left overflow-hidden">
+    <div className="flex items-center gap-2 mb-2">
+        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+        <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">
+            System Logic Ticker
+        </span>
+    </div>
+    <p className="text-sky-400 font-mono text-xs tracking-tight leading-relaxed">
+        {data.scout_note}
+    </p>
+</div>
             <button 
               onClick={submitResults} 
               disabled={!finalBid || finalBid <= 0}
