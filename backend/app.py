@@ -7,27 +7,63 @@ import pandas as pd
 
 app = Flask(__name__)
 CORS(app) # Allows React to talk to Flask
+app.config['JSON_SORT_KEYS'] = False
 
 @app.route('/api/get_results', methods=['GET'])
 def get_results():
-    if not os.path.exists('experiment_results.csv'):
-        return jsonify([])
-    # Use pandas to read the CSV and send it back as JSON
-    df = pd.read_csv('experiment_results.csv')
-    return df.to_json(orient='records')
+    results = []
+    try:
+        if not os.path.exists('experiment_results.csv'):
+            return jsonify([])
+
+        with open('experiment_results.csv', mode='r', encoding='utf-8') as file:
+            # Use DictReader to automatically map headers to values
+            reader = csv.DictReader(file)
+            for row in reader:
+                # Clean the row: replace None keys/values with empty strings
+                clean_row = {str(k): (v if v is not None else "") for k, v in row.items() if k is not None}
+                if clean_row: # Only add if the row isn't empty
+                    results.append(clean_row)
+                    
+        return jsonify(results)
+    except Exception as e:
+        print(f"Error reading CSV: {e}")
+        return jsonify({"error": str(e)}), 500
     
 @app.route('/api/save_result', methods=['POST'])
 def save_result():
     data = request.json
-    file_exists = os.path.isfile('experiment_results.csv')
+    # Add 'session_id' to the list of fields to save
+    fields = [
+        data.get('session_id'), 
+        data.get('player'), 
+        data.get('initial_guess'), 
+        data.get('ai_value'), 
+        data.get('final_bid'),
+        data.get('time_out')
+    ]
     
-    with open('experiment_results.csv', mode='a', newline='', encoding='utf-8-sig') as f:
-        writer = csv.DictWriter(f, fieldnames=['player', 'initial_guess', 'ai_value', 'final_bid', 'p_score'])
-        if not file_exists:
-            writer.writeheader()
-        writer.writerow(data)
+    with open('experiment_results.csv', 'a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(fields)
         
     return jsonify({"status": "success"})
+
+import os
+
+@app.route('/api/clear_results', methods=['POST'])
+def clear_results():
+    try:
+        # Define the header row to reset the file
+        header = ['session_id', 'player', 'initial_guess', 'ai_value', 'final_bid', 'time_out']
+        
+        with open('experiment_results.csv', 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(header)
+            
+        return jsonify({"status": "success", "message": "Data wiped successfully"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/')
 def home():

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'; // Added useEffect to imports
 
+
 const PLAYERS = ["Cole Palmer", "Martin Ødegaard", "William Saliba", "Mohamed Salah", "Kobbie Mainoo", "Antony", "Bryan Mbeumo", "Bukayo Saka", "Erling Haaland", "Chris Wood"];
 
 function Participant() {
@@ -8,6 +9,7 @@ function Participant() {
   const [finalBid, setFinalBid] = useState("");
   const [data, setData] = useState(null);
   const [phase, setPhase] = useState(1);
+  const [sessionId] = useState(`USER-${Date.now()}`);
 
   useEffect(() => {
     const fetchBasicStats = async () => {
@@ -36,6 +38,7 @@ function Participant() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        session_id: sessionId,
         player: data.name,
         initial_guess: guess,
         ai_value: data.market_value_m,
@@ -44,6 +47,19 @@ function Participant() {
     });
     setPhase(4);
   };
+
+  useEffect(() => {
+  const handleBeforeUnload = (e) => {
+    // Only warn if they are in the middle of the experiment (Phase 1, 2, or 3)
+    if (phase > 0 && phase < 4) {
+      e.preventDefault();
+      e.returnValue = ''; // Required for Chrome
+    }
+  };
+
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+}, [phase]);
 
   const [timeLeft, setTimeLeft] = useState(30); // 30-second countdown
   useEffect(() => {
