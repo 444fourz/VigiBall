@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect to imports
 
 const PLAYERS = ["Cole Palmer", "Martin Ødegaard", "William Saliba", "Mohamed Salah", "Kobbie Mainoo", "Antony", "Bryan Mbeumo", "Evan Ferguson", "Erling Haaland", "Chris Wood"];
 
@@ -9,20 +9,19 @@ function Participant() {
   const [data, setData] = useState(null);
   const [phase, setPhase] = useState(1);
 
-  // 1. This "Effect" runs every time the 'player' variable changes
-React.useEffect(() => {
-  const fetchBasicStats = async () => {
-    try {
-      const res = await fetch(`http://localhost:5000/api/evaluate?name=${player}`);
-      const result = await res.json();
-      setData(result); // This updates the Matches, Goals, and Assists in Phase 1
-    } catch (err) {
-      console.error("Error fetching preview stats:", err);
-    }
-  };
+  useEffect(() => {
+    const fetchBasicStats = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/evaluate?name=${player}`);
+        const result = await res.json();
+        setData(result); 
+      } catch (err) {
+        console.error("Error fetching preview stats:", err);
+      }
+    };
 
-  fetchBasicStats();
-}, [player]); // <--- The [player] here is the "Dependency". It means: "Run this when player changes"
+    fetchBasicStats();
+  }, [player]);
 
   const fetchPlayerData = async () => {
     const res = await fetch(`http://localhost:5000/api/evaluate?name=${player}`);
@@ -42,7 +41,7 @@ React.useEffect(() => {
         final_bid: finalBid
       })
     });
-    setPhase(4); // Success screen
+    setPhase(4); 
   };
 
   return (
@@ -57,47 +56,57 @@ React.useEffect(() => {
             <select className="w-full bg-slate-800 p-4 rounded-xl mb-6" onChange={(e) => setPlayer(e.target.value)}>
               {PLAYERS.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
+
             <div className="flex justify-between items-center px-2 mb-2">
-                <span className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Performance Summary</span>
-                <span className="text-[10px] text-slate-400 uppercase font-bold bg-slate-800 px-2 py-1 rounded">
-                    Since September 2024
+                <span className="text-[10px] text-slate-500 uppercase font-black tracking-widest">
+                  Subject Profile
                 </span>
+                {/* DISPLAY AGE AND POSITION IN PHASE 1 */}
+                {data && (
+                  <div className="flex gap-2">
+                    <span className="text-[10px] text-sky-400 uppercase font-bold bg-sky-500/10 px-2 py-1 rounded border border-sky-500/20">
+                      {data.position}
+                    </span>
+                    <span className="text-[10px] text-sky-400 uppercase font-bold bg-sky-500/10 px-2 py-1 rounded border border-sky-500/20">
+                      Age: {data.age}
+                    </span>
+                  </div>
+                )}
             </div>
+
             <div className="grid grid-cols-3 gap-4 mb-8 text-center bg-slate-950 p-6 rounded-2xl">
               <div><p className="text-[10px] text-slate-500">GAMES</p><p className="text-2xl font-bold">{data ? data.matches : "-"}</p></div>
               <div><p className="text-[10px] text-slate-500">GOALS</p><p className="text-2xl font-bold text-green-400">{data ? data.goals : "-"}</p></div>
               <div><p className="text-[10px] text-slate-500">ASSISTS</p><p className="text-2xl font-bold text-sky-400">{data ? data.assists : "-"}</p></div>
             </div>
 
+            <div className="space-y-4">
+              <input 
+                type="number" 
+                className="w-full bg-slate-800 p-4 rounded-xl border border-slate-700 text-white outline-none focus:ring-2 focus:ring-sky-500" 
+                placeholder="Your Initial Market Value (£M)" 
+                value={guess}
+                onChange={(e) => setGuess(e.target.value)} 
+              />
 
-           {/* Phase 1 Input Section */}
-<div className="space-y-4">
-  <input 
-    type="number" 
-    className="w-full bg-slate-800 p-4 rounded-xl border border-slate-700 text-white outline-none focus:ring-2 focus:ring-sky-500" 
-    placeholder="Your Initial Market Value (£M)" 
-    value={guess}
-    onChange={(e) => setGuess(e.target.value)} 
-  />
-
-  <button 
-    onClick={fetchPlayerData} 
-    disabled={!guess || guess <= 0} // Lock button if empty or 0
-    className={`w-full py-4 rounded-xl font-black transition-all uppercase tracking-widest ${
-      !guess || guess <= 0 
-        ? 'bg-slate-700 text-slate-500 cursor-not-allowed' // Style for disabled
-        : 'bg-sky-500 text-slate-950 hover:bg-sky-400 shadow-lg shadow-sky-500/20' // Style for active
-    }`}
-  >
-    Proceed to Deep Analysis
-  </button>
-  
-  {(!guess || guess <= 0) && (
-    <p className="text-[10px] text-center text-slate-500 italic mt-2">
-      Please enter a valuation to continue
-    </p>
-  )}
-</div>
+              <button 
+                onClick={fetchPlayerData} 
+                disabled={!guess || guess <= 0} 
+                className={`w-full py-4 rounded-xl font-black transition-all uppercase tracking-widest ${
+                  !guess || guess <= 0 
+                    ? 'bg-slate-700 text-slate-500 cursor-not-allowed' 
+                    : 'bg-sky-500 text-slate-950 hover:bg-sky-400 shadow-lg shadow-sky-500/20' 
+                }`}
+              >
+                Proceed to Deep Analysis
+              </button>
+              
+              {(!guess || guess <= 0) && (
+                <p className="text-[10px] text-center text-slate-500 italic mt-2">
+                  Please enter a valuation to continue
+                </p>
+              )}
+            </div>
           </div>
         )}
 
@@ -106,6 +115,12 @@ React.useEffect(() => {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="bg-slate-900 p-10 rounded-[2.5rem] border border-slate-800 mb-6">
                <h2 className="text-5xl font-black mb-2">{data.name}</h2>
+               
+               {/* DISPLAY AGE AND POSITION IN PHASE 2 */}
+               <p className="text-sky-400 font-bold uppercase tracking-widest text-sm mb-6">
+                  {data.position} | Age: {data.age} | {data.squad}
+               </p>
+
                <div className="flex gap-4 items-center">
                  <span className="bg-green-500/10 text-green-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border border-green-500/20">AI Valuation: £{data.market_value_m}M</span>
                </div>
@@ -137,20 +152,20 @@ React.useEffect(() => {
             <h2 className="text-xl font-bold mb-6">Final Assessment</h2>
             <p className="text-slate-400 text-sm mb-8">Having reviewed the basic stats, deep analytics, and AI valuation, what is your final bid?</p>
             <input type="number" className="w-full bg-slate-800 p-4 rounded-xl mb-6 border border-slate-700 text-center text-2xl font-bold" 
-                   placeholder="Final Value (£M)" onChange={(e) => setFinalBid(e.target.value)} />
+                   placeholder="Final Value (£M)" value={finalBid} onChange={(e) => setFinalBid(e.target.value)} />
             <button 
-      onClick={submitResults} 
-      disabled={!finalBid || finalBid <= 0}
-      className={`w-full py-4 rounded-xl font-black transition-all ${
-        !finalBid || finalBid <= 0
-          ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-          : 'bg-green-500 text-slate-950 hover:bg-green-400'
-      }`}
-    >
-      SUBMIT EXPERIMENT DATA
-    </button>
-  </div>
-)}
+              onClick={submitResults} 
+              disabled={!finalBid || finalBid <= 0}
+              className={`w-full py-4 rounded-xl font-black transition-all ${
+                !finalBid || finalBid <= 0
+                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : 'bg-green-500 text-slate-950 hover:bg-green-400'
+              }`}
+            >
+              SUBMIT EXPERIMENT DATA
+            </button>
+          </div>
+        )}
 
         {/* PHASE 4: SUCCESS */}
         {phase === 4 && (

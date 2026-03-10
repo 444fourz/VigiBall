@@ -217,6 +217,7 @@ def calculate_valuation(player_name):
 
     return {
         "name": player_name,
+        "position": pos_group,
         "matches": raw_mp,
         "goals": raw_gls,
         "assists": raw_ast,
