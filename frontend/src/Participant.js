@@ -44,6 +44,31 @@ function Participant() {
     setPhase(4); 
   };
 
+  const [activeNote, setActiveNote] = useState("");
+const [showNote, setShowNote] = useState(false);
+
+// Logic to show random popups in Phase 3
+useEffect(() => {
+  if (phase === 3 && data?.scout_note) {
+    const triggerPopup = () => {
+      // Pick a random insight from the list
+      const randomMsg = data.scout_note[Math.floor(Math.random() * data.scout_note.length)];
+      setActiveNote(randomMsg);
+      setShowNote(true);
+
+      // Hide it after 3 seconds
+      setTimeout(() => setShowNote(false), 3000);
+
+      // Schedule the next one at a random interval (4-8 seconds)
+      const nextInterval = Math.floor(Math.random() * 4000) + 2000;
+      return setTimeout(triggerPopup, nextInterval);
+    };
+
+    const timer = triggerPopup();
+    return () => clearTimeout(timer);
+  }
+}, [phase, data]);
+
   return (
     <div className="min-h-screen bg-[#020617] text-white p-12">
       <div className="max-w-4xl mx-auto">
@@ -147,37 +172,53 @@ function Participant() {
         )}
 
         {/* PHASE 3: FINAL VERDICT */}
-        {phase === 3 && (
-          <div className="max-w-md mx-auto bg-slate-900 p-10 rounded-[2rem] border border-slate-800 text-center">
-            <h2 className="text-xl font-bold mb-6">Final Assessment</h2>
-            <p className="text-slate-400 text-sm mb-8">Having reviewed the basic stats, deep analytics, and AI valuation, what is your final bid?</p>
-            <input type="number" className="w-full bg-slate-800 p-4 rounded-xl mb-6 border border-slate-700 text-center text-2xl font-bold" 
-                   placeholder="Final Value (£M)" value={finalBid} onChange={(e) => setFinalBid(e.target.value)} />
-            {/* PHASE 3: Snappy AI Summary */}
-<div className="mb-6 bg-slate-950 border border-slate-800 p-4 rounded-xl text-left overflow-hidden">
-    <div className="flex items-center gap-2 mb-2">
-        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-        <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">
-            System Logic Ticker
-        </span>
+{phase === 3 && (
+  <div className="max-w-md mx-auto relative bg-slate-900 p-10 rounded-[2rem] border border-slate-800 text-center shadow-2xl animate-in fade-in zoom-in duration-300">
+    
+    {/* EXTERNAL SCOUT'S NOTE: Positioned outside to the right */}
+    <div className={`absolute top-0 -right-52 w-48 transition-all duration-1000 transform hidden md:block ${
+      showNote ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+    }`}>
+      <div className="bg-[#0f172a] border border-sky-500/40 p-4 rounded-2xl shadow-2xl text-left relative">
+        {/* HEADER */}
+        <div className="flex items-center gap-2 mb-2 border-b border-slate-800 pb-2">
+          <div className="w-1.5 h-1.5 bg-sky-500 rounded-full animate-pulse"></div>
+          <span className="text-[9px] font-black text-sky-400 uppercase tracking-widest">
+            Scout's Note
+          </span>
+        </div>
+
+        {/* MESSAGE */}
+        <p className="text-slate-300 font-medium text-[10px] leading-relaxed italic">
+          "{activeNote}"
+        </p>
+
+        {/* INDICATOR LINE: Connects the note visually to the main card */}
+        <div className="absolute top-8 -left-4 w-4 h-[1px] bg-sky-500/30"></div>
+      </div>
     </div>
-    <p className="text-sky-400 font-mono text-xs tracking-tight leading-relaxed">
-        {data.scout_note}
-    </p>
-</div>
-            <button 
-              onClick={submitResults} 
-              disabled={!finalBid || finalBid <= 0}
-              className={`w-full py-4 rounded-xl font-black transition-all ${
-                !finalBid || finalBid <= 0
-                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                  : 'bg-green-500 text-slate-950 hover:bg-green-400'
-              }`}
-            >
-              SUBMIT EXPERIMENT DATA
-            </button>
-          </div>
-        )}
+    <h2 className="text-xl font-bold mb-6 italic text-slate-400">Final Assessment</h2>
+    <input 
+      type="number" 
+      className="w-full bg-slate-800 p-4 rounded-xl mb-6 border border-slate-700 text-center text-2xl font-bold focus:ring-2 focus:ring-sky-500 outline-none" 
+      placeholder="Final Value (£M)" 
+      value={finalBid} 
+      onChange={(e) => setFinalBid(e.target.value)} 
+    />
+
+    <button 
+      onClick={submitResults} 
+      disabled={!finalBid || finalBid <= 0}
+      className={`w-full py-4 rounded-xl font-black transition-all ${
+        !finalBid || finalBid <= 0
+          ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+          : 'bg-green-500 text-slate-950 hover:bg-green-400'
+      }`}
+    >
+      SUBMIT EXPERIMENT DATA
+    </button>
+  </div>
+)}
 
         {/* PHASE 4: SUCCESS */}
         {phase === 4 && (

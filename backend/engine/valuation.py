@@ -83,31 +83,25 @@ def get_primary_position(pos_string, player_name):
     return 'CM' # Fallback
 
 def generate_scout_note(name, pos, age, squad, market_value, p_score):
-    insights = []
+    # Create a list of separate "snappy" insights
+    insights = [
+        f"Subject identified: {name}",
+        f"Role: {pos}",
+        f"Squad: {squad}"
+    ]
 
-    # 1. Performance Insight (The "What")
-    if p_score >= 8.5:
-        insights.append("Elite statistical outlier.")
-    elif p_score <= 4.0:
-        insights.append("Underlying metrics declining.")
-    else:
-        insights.append("Consistent output for role.")
-
-    # 2. Market Context (The "Why")
-    big_six = ["Arsenal", "Manchester City", "Liverpool", "Manchester Utd", "Chelsea", "Tottenham"]
-    if squad in big_six:
-        insights.append("Big Six liquidity premium applied.")
+    if p_score >= 8.5: insights.append("Performance: Elite outlier status")
+    elif p_score <= 4.0: insights.append("Warning: Metric decay detected")
     
-    if age < 22:
-        insights.append("High ceiling/age-weighted value.")
-    elif age > 31:
-        insights.append("Veteran depreciation factored.")
+    if age < 22: insights.append("Age Factor: High ceiling detected")
+    elif age > 31: insights.append("Age Factor: Veteran depreciation")
+    
+    if "Manchester City" in squad or "Arsenal" in squad:
+        insights.append("Market Context: Big Six premium active")
 
-    # 3. Final verdict (The "Result")
-    insights.append(f"AI Baseline: £{market_value}M.")
-
-    # Join them with dots for a "Digital" look
-    return " // ".join(insights)
+    insights.append(f"AI Estimate: £{market_value}M")
+    
+    return insights # Returns a list: ["insight 1", "insight 2", ...]
 
 def calculate_valuation(player_name):
     # 1. Get RAW stats for Phase 1 from CSVs
