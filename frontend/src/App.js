@@ -13,6 +13,8 @@ function App() {
         {/* Researcher Dashboard */}
         <Route path="/admin" element={<Admin />} />
 
+        <Route path="/test/:testId" element={<Participant />} />
+
         {/* Catch-all: If the URL is wrong, go back to the experiment */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
