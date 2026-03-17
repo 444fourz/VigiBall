@@ -3,21 +3,32 @@ import React, { useState, useEffect } from 'react'; // Added useEffect to import
 const PLAYERS = ["Cole Palmer", "Martin Ødegaard", "William Saliba", "Mohamed Salah", "Kobbie Mainoo", "Antony", "Bryan Mbeumo", "Bukayo Saka", "Erling Haaland", "Chris Wood"];
 
 const STAT_GLOSSARY = {
-  // Defensive Metrics
-  "tkl_pct": { title: "Tackle Success %", desc: "Percentage of dribblers tackled. Measures timing and defensive 1v1 reliability." },
-  "def_3rd": { title: "Defensive 1/3 Actions", desc: "Actions taken in the team's own defensive area. High numbers indicate a 'stay-at-home' defender." },
-  "press_att": { title: "Pressing Intensity", desc: "The number of times a player closed down an opponent to force a turnover." },
-  
-  // Midfield/Progression
-  "prog_dist": { title: "Progressive Distance", desc: "Total yards the player moved the ball towards the opponent's goal via passes or carries." },
-  "final_3rd": { title: "Final Third Entries", desc: "Passes or carries that successfully enter the attacking zone." },
-  
-  // Attacking/Output
-  "npxg": { title: "Expected Goals (NP)", desc: "The probability a shot results in a goal, excluding penalties. Measures chance-finding quality." },
-  "sc_act": { title: "Shot Creating Actions", desc: "The two offensive actions directly leading to a shot (passes, dribbles, or fouls drawn)." },
-  "xg": { title: "Expected Assists", desc: "Measures the likelihood that a pass becomes a goal assist based on where the receiver shot from." },
-  "gca90": { title: "Expected Assists", desc: "Measures the likelihood that a pass becomes a goal assist based on where the receiver shot from." },
-  "xa": { title: "Expected Assists", desc: "Measures the likelihood that a pass becomes a goal assist based on where the receiver shot from." }
+  // --- Attacking & Creative ---
+  "xg": { title: "Expected Goals", desc: "Measures shot quality. High xG suggests a player finds themselves in high-probability scoring positions." },
+  "xag": { title: "Expected Assisted Goals", desc: "The xG resulting from a player's passes. Measures the quality of chances created for teammates." },
+  "gls": { title: "Goals", desc: "Actual non-penalty goals scored. Comparing this to xG shows finishing efficiency." },
+  "gca90": { title: "Goal Creating Actions", desc: "The two offensive actions directly leading to a goal. Measures decisive impact on the scoreline." },
+  "kp": { title: "Key Passes", desc: "Passes that directly lead to a shot attempt. A primary indicator of creative vision." },
+  "att_pen": { title: "Penalty Area Touches", desc: "Number of times a player touches the ball in the opponent's box. Measures 'threat' presence." },
+
+  // --- Progression & Possession ---
+  "prgc": { title: "Progressive Carries", desc: "Carries that move the ball towards the opponent's goal line by at least 10 yards. Measures ball-carrying drive." },
+  "prgp": { title: "Progressive Passes", desc: "Completed passes that move the ball significantly closer to the goal. Measures vertical playmaking." },
+  "prgdist": { title: "Progressive Distance", desc: "Total yards gained toward the goal via passes or carries. Measures overall yardage gained for the team." },
+  "succ%": { title: "Dribble Success %", desc: "Percentage of successful take-ons. High rates indicate elite 1v1 technical ability." },
+  "cmp%": { title: "Pass Completion %", desc: "Percentage of passes completed. Measures reliability and retention of possession." },
+  "mis": { title: "Miscontrols", desc: "Number of times a player failed to control the ball. Low numbers indicate high technical security." },
+  "dis": { title: "Dispossessed", desc: "Number of times a player lost the ball to an opponent's tackle. Measures strength and awareness under pressure." },
+
+  // --- Defensive ---
+  "tkl%": { title: "Tackle Success %", desc: "Percentage of dribblers tackled. Measures timing and defensive 1v1 reliability." },
+  "int": { title: "Interceptions", desc: "Number of times a player cut out an opponent's pass. Measures tactical reading and positioning." },
+  "recov": { title: "Ball Recoveries", desc: "Number of loose balls picked up. High numbers are typical for high-energy 'engines' in midfield." },
+  "blocks": { title: "Blocks", desc: "Number of times a player blocked an opponent's pass or shot. Indicates defensive diligence." },
+  "tkl+int": { title: "Tackles + Interceptions", desc: "The combined defensive output. A primary measure of overall defensive activity." },
+  "clr": { title: "Clearances", desc: "Actions taken to move the ball away from the danger zone. Essential for traditional defensive roles." },
+  "att_3rd": { title: "Attacking 1/3 Press", desc: "Defensive actions taken in the opponent's territory. Measures 'front-foot' defending." },
+  "won%": { title: "Aerial Duel Win %", desc: "Percentage of headed duels won. Measures physical dominance and aerial timing." }
 };
 
 function Participant() {
