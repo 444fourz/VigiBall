@@ -41,25 +41,20 @@ function Participant() {
     console.log("Current Cohort:", cohort, "Current Player:", player);
 
 
-    // --- 1. LOAD COHORT (Standard or Test) ---
    useEffect(() => {
     const loadSession = async () => {
+        // If there is a testId in the URL, load that specific test
         if (testId) {
             try {
                 const res = await fetch(`http://localhost:5000/api/get-test/${testId}`);
-                if (!res.ok) throw new Error("Test not found");
                 const result = await res.json();
-                
-                // IMPORTANT: Ensure this matches the key in your Flask jsonify
-                if (result.player_names && result.player_names.length > 0) {
-                    setCohort(result.player_names);
-                    setPlayer(result.player_names[0]); // This triggers the stat fetch
-                }
-            } catch (err) {
-                console.error("Test load failed:", err);
-            }
-        } else {
-            const defaults = ["Cole Palmer", "Erling Haaland"];
+                setCohort(result.player_names);
+                setPlayer(result.player_names[0]);
+            } catch (err) { console.error("Test load failed", err); }
+        } 
+        // Otherwise, it's the standard mode
+        else {
+            const defaults = ["Cole Palmer", "Martin Ødegaard", "William Saliba", "Cody Gakpo"]; 
             setCohort(defaults);
             setPlayer(defaults[0]);
         }
