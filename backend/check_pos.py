@@ -4,7 +4,7 @@ import os
 
 # Ensure we have the correct path to your database
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, 'vigiball.db')
+DB_PATH = os.path.join(BASE_DIR, 'vigiball_v2.db')
 
 def check_player_ages(player_name):
     conn = sqlite3.connect(DB_PATH)
