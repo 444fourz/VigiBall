@@ -1,7 +1,24 @@
 import React, { useState, useEffect } from 'react'; // Added useEffect to imports
 
-
 const PLAYERS = ["Cole Palmer", "Martin Ødegaard", "William Saliba", "Mohamed Salah", "Kobbie Mainoo", "Antony", "Bryan Mbeumo", "Bukayo Saka", "Erling Haaland", "Chris Wood"];
+
+const STAT_GLOSSARY = {
+  // Defensive Metrics
+  "tkl_pct": { title: "Tackle Success %", desc: "Percentage of dribblers tackled. Measures timing and defensive 1v1 reliability." },
+  "def_3rd": { title: "Defensive 1/3 Actions", desc: "Actions taken in the team's own defensive area. High numbers indicate a 'stay-at-home' defender." },
+  "press_att": { title: "Pressing Intensity", desc: "The number of times a player closed down an opponent to force a turnover." },
+  
+  // Midfield/Progression
+  "prog_dist": { title: "Progressive Distance", desc: "Total yards the player moved the ball towards the opponent's goal via passes or carries." },
+  "final_3rd": { title: "Final Third Entries", desc: "Passes or carries that successfully enter the attacking zone." },
+  
+  // Attacking/Output
+  "npxg": { title: "Expected Goals (NP)", desc: "The probability a shot results in a goal, excluding penalties. Measures chance-finding quality." },
+  "sc_act": { title: "Shot Creating Actions", desc: "The two offensive actions directly leading to a shot (passes, dribbles, or fouls drawn)." },
+  "xg": { title: "Expected Assists", desc: "Measures the likelihood that a pass becomes a goal assist based on where the receiver shot from." },
+  "gca90": { title: "Expected Assists", desc: "Measures the likelihood that a pass becomes a goal assist based on where the receiver shot from." },
+  "xa": { title: "Expected Assists", desc: "Measures the likelihood that a pass becomes a goal assist based on where the receiver shot from." }
+};
 
 function Participant() {
   const [player, setPlayer] = useState(PLAYERS[0]);
@@ -31,6 +48,28 @@ function Participant() {
     setData(result);
     setPhase(2);
   };
+
+  const StatTooltip = ({ label }) => {
+  const info = STAT_GLOSSARY[label.toLowerCase()] || { 
+    title: label.replace(/_/g, ' ').toUpperCase(), 
+    desc: "Advanced performance metric provided by the scouting database." 
+  };
+
+  return (
+    <div className="group relative inline-block cursor-help">
+      <span className="border-b border-dotted border-slate-700 group-hover:text-sky-400 group-hover:border-sky-400 transition-colors">
+        {label.replace(/_/g, ' ')}
+      </span>
+      
+      {/* TOOLTIP POPUP */}
+      <div className="absolute bottom-full left-0 mb-2 w-48 p-3 bg-slate-950 border border-sky-500/40 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 transform scale-95 group-hover:scale-100 origin-bottom-left">
+        <p className="text-sky-400 font-black text-[9px] uppercase mb-1">{info.title}</p>
+        <p className="text-slate-300 text-[10px] leading-tight italic">"{info.desc}"</p>
+        <div className="absolute top-full left-4 border-8 border-transparent border-t-slate-950"></div>
+      </div>
+    </div>
+  );
+};
 
   const submitResults = async () => {
     const bidToSave = finalBid || guess;
@@ -170,40 +209,54 @@ function Participant() {
         )}
 
         {/* PHASE 2: ADVANCED STATS & AI VALUE */}
-        {phase === 2 && data && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-slate-900 p-10 rounded-[2.5rem] border border-slate-800 mb-6">
-              <h2 className="text-5xl font-black mb-2">{data.name}</h2>
+{phase === 2 && data && (
+  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="bg-slate-900 p-10 rounded-[2.5rem] border border-slate-800 mb-6">
+      <h2 className="text-5xl font-black mb-2">{data.name}</h2>
 
-              {/* DISPLAY AGE AND POSITION IN PHASE 2 */}
-              <p className="text-sky-400 font-bold uppercase tracking-widest text-sm mb-6">
-                {data.position} | Age: {data.age} | {data.squad}
-              </p>
+      <p className="text-sky-400 font-bold uppercase tracking-widest text-sm mb-6">
+        {data.position} | Age: {data.age} | {data.squad}
+      </p>
 
-              <div className="flex gap-4 items-center">
-                <span className="bg-green-500/10 text-green-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border border-green-500/20">AI Valuation: £{data.market_value_m}M</span>
+      <div className="flex gap-4 items-center">
+        <span className="bg-green-500/10 text-green-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border border-green-500/20">
+            AI Valuation: £{data.market_value_m}M
+        </span>
+      </div>
+
+      <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+          <h3 className="text-sky-400 font-bold uppercase text-xs mb-6 tracking-widest">Advanced Metrics (Percentiles)</h3>
+          {Object.entries(data.percentiles).map(([stat, val]) => (
+            <div key={stat} className="mb-4">
+              <div className="flex justify-between text-[10px] text-slate-500 uppercase font-black mb-1">
+                {/* WRAPPED LABEL IN TOOLTIP */}
+                <StatTooltip label={stat} />
+                <span>{val}%</span>
               </div>
-
-              <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <h3 className="text-sky-400 font-bold uppercase text-xs mb-6 tracking-widest">Advanced Metrics (Percentiles)</h3>
-                  {Object.entries(data.percentiles).map(([stat, val]) => (
-                    <div key={stat} className="mb-4">
-                      <div className="flex justify-between text-[10px] text-slate-500 uppercase font-black mb-1">
-                        <span>{stat.replace('_', ' ')}</span><span>{val}%</span>
-                      </div>
-                      <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-sky-500" style={{ width: `${val}%` }}></div></div>
-                    </div>
-                  ))}
-                </div>
-                <div className="bg-slate-950 p-8 rounded-3xl border border-slate-800 flex flex-col justify-center text-center">
-                  <p className="text-xs text-slate-500 uppercase font-bold mb-4">Initial Intuition: £{guess}M</p>
-                  <button onClick={() => setPhase(3)} className="bg-white text-slate-950 py-4 rounded-xl font-black uppercase tracking-widest text-sm">Review Final Verdict</button>
-                </div>
+              <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-sky-500 transition-all duration-1000" 
+                  style={{ width: `${val}%` }}
+                ></div>
               </div>
             </div>
-          </div>
-        )}
+          ))}
+        </div>
+        
+        <div className="bg-slate-950 p-8 rounded-3xl border border-slate-800 flex flex-col justify-center text-center">
+          <p className="text-xs text-slate-500 uppercase font-bold mb-4">Initial Intuition: £{guess}M</p>
+          <button 
+            onClick={() => setPhase(3)} 
+            className="bg-white text-slate-950 py-4 rounded-xl font-black uppercase tracking-widest text-sm hover:bg-sky-400 transition-colors"
+          >
+            Review Final Verdict
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* PHASE 3: FINAL VERDICT */}
         {phase === 3 && (

@@ -3,76 +3,55 @@ import pandas as pd
 from scipy import stats
 import os
 
+# Setup Paths
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(CURRENT_DIR, '..', 'vigiball.db')
 CSV_PATH_2425 = r"C:\Users\nayee\OneDrive - Aston University\Desktop\CS3\FYP\FYP Workspace\VigiBall\backend\players_data-2024_2025.csv"
 CSV_PATH_2526 = r"C:\Users\nayee\OneDrive - Aston University\Desktop\CS3\FYP\FYP Workspace\VigiBall\backend\players_data-2025_2026.csv"
 
-
 def get_raw_csv_stats(player_name):
-    """Helper to sum raw stats from CSV files."""
+    """
+    Helper to sum raw stats from CSV files for Phase 1.
+    Uses case-insensitive partial matching to prevent '0 stats' error.
+    """
     total_mp, total_gls, total_ast = 0, 0, 0
-    
+    search_name = player_name.strip().lower()
+
     for path in [CSV_PATH_2425, CSV_PATH_2526]:
         if os.path.exists(path):
-            df_raw = pd.read_csv(path)
-            # Find the player (using case-insensitive search to be safe)
-            p_match = df_raw[df_raw['Player'].str.contains(player_name, case=False, na=False)]
-            if not p_match.empty:
-                total_mp += p_match['MP'].sum()
-                total_gls += p_match['Gls'].sum()
-                total_ast += p_match['Ast'].sum()
+            try:
+                df_raw = pd.read_csv(path)
+                # Flexible matching: handles special characters and casing
+                p_match = df_raw[df_raw['Player'].str.lower().str.contains(search_name, na=False)]
+                
+                if not p_match.empty:
+                    total_mp += p_match['MP'].sum()
+                    total_gls += p_match['Gls'].sum()
+                    total_ast += p_match['Ast'].sum()
+            except Exception as e:
+                print(f"Error reading {path}: {e}")
     
     return int(total_mp), int(total_gls), int(total_ast)
 
-# Define the metrics for each position, and whether HIGHER is better (True) or LOWER is better (False)
+# Stats profiles for Phase 2 Tooltips and Percentiles
 STAT_PROFILES = {
-    'FW': { # Wingers and Strikers (Judge on Output)
-        'xg': True, 'npg': True, 'xag': True, 'gca90': True,
-        'prgc': True, 'succ_pct': True, 'touches_box': True # Removed sot_pct to help wingers
-    },
-    'AM': { # Attacking Midfielders (Judge on Playmaking)
-        'xag': True, 'kp': True, 'prgp': True, 'gca90': True,
-        'prgc': True, 'touches_box': True # Removed efficiency stats like cmp_pct
-    },
-    'CM': { # Box-to-Box (Standard)
-        'xag': True, 'kp': True, 'cmp_pct': True, 'prgp': True,
-        'tkl_pct': True, 'interceptions': True, 'miscontrols': False, 'dispossessed': False
-    },
-    'DM': { # Defensive Destroyers (Rice, Rodri) - HEAVY DEFENSIVE FOCUS
-        'cmp_pct': True, 'tkl_pct': True, 'interceptions': True, 'recoveries': True,
-        'prg_pass_dist': True, 'blocks': True, 'tkl_int': True, 'clearances': True
-    },
-    'DF': { # Centre Backs / Full Backs
-        'aerial_won_pct': True, 'def_act_att_3rd': True, 'recoveries': True,
-        'prg_pass_dist': True, 'blocks': True, 'tkl_int': True, 'clearances': True
-    },
-    'GK': {
-        'psxg_plus_minus': True, 'save_pct': True, 'cross_stop_pct': True,
-        'launch_pct': True, 'opa_sweeper': True
-    }
+    'FW': {'xg': True, 'npg': True, 'xag': True, 'gca90': True, 'prgc': True, 'succ_pct': True, 'touches_box': True},
+    'AM': {'xag': True, 'kp': True, 'prgp': True, 'gca90': True, 'prgc': True, 'touches_box': True},
+    'CM': {'xag': True, 'kp': True, 'cmp_pct': True, 'prgp': True, 'tkl_pct': True, 'interceptions': True, 'miscontrols': False, 'dispossessed': False},
+    'DM': {'cmp_pct': True, 'tkl_pct': True, 'interceptions': True, 'recoveries': True, 'prg_pass_dist': True, 'blocks': True, 'tkl_int': True, 'clearances': True},
+    'DF': {'aerial_won_pct': True, 'def_act_att_3rd': True, 'recoveries': True, 'prg_pass_dist': True, 'blocks': True, 'tkl_int': True, 'clearances': True},
+    'GK': {'psxg_plus_minus': True, 'save_pct': True, 'cross_stop_pct': True, 'launch_pct': True, 'opa_sweeper': True}
 }
 
 def get_primary_position(pos_string, player_name):
-    """Categorize the FBRef position string, with manual overrides for the experiment."""
-    
-    # 1. EXPERIMENTAL OVERRIDES
-    # Force our specific 10 players into the perfect mathematical buckets
+    """Categorize the FBRef position string with manual overrides."""
     overrides = {
-        "Martin Ødegaard": "AM",
-        "Cole Palmer": "AM",
-        "Kevin De Bruyne": "AM",
-        "Declan Rice": "DM",
-        "Rodri": "DM",
-        "João Palhinha": "DM",
-        "Bruno Fernandes": "AM"
+        "Martin Ødegaard": "AM", "Cole Palmer": "AM", "Kevin De Bruyne": "AM",
+        "Declan Rice": "DM", "Rodri": "DM", "João Palhinha": "DM", "Bruno Fernandes": "AM"
     }
-    
     for name, pos in overrides.items():
-        if name in player_name:
-            return pos
-            
-    # 2. DYNAMIC PARSING (For everyone else)
+        if name in player_name: return pos
+    
     pos_string = str(pos_string).upper()
     if 'GK' in pos_string: return 'GK'
     if 'MF,FW' in pos_string or 'FW,MF' in pos_string: return 'AM'
@@ -80,195 +59,109 @@ def get_primary_position(pos_string, player_name):
     if 'FW' in pos_string: return 'FW'
     if 'MF' in pos_string: return 'CM' 
     if 'DF' in pos_string: return 'DF'
-    return 'CM' # Fallback
+    return 'CM'
 
 def generate_scout_note(name, pos, age, squad, market_value, p_score):
-    # Create a list of separate "snappy" insights
-    insights = [
-        f"Subject identified: {name}",
-        f"Role: {pos}",
-        f"Squad: {squad}"
-    ]
-
+    """Generates the list of insights for the Scout's Note component."""
+    insights = [f"Subject identified: {name}", f"Role: {pos}", f"Squad: {squad}"]
     if p_score >= 8.5: insights.append("Performance: Elite outlier status")
     elif p_score <= 4.0: insights.append("Warning: Metric decay detected")
     
     if age < 22: insights.append("Age Factor: High ceiling detected")
     elif age > 31: insights.append("Age Factor: Veteran depreciation")
     
-    if "Manchester City" in squad or "Arsenal" in squad:
+    big_six = ["Manchester City", "Arsenal", "Liverpool", "Manchester Utd", "Chelsea", "Tottenham"]
+    if any(team in squad for team in big_six):
         insights.append("Market Context: Big Six premium active")
 
     insights.append(f"AI Estimate: £{market_value}M")
-    
-    return insights # Returns a list: ["insight 1", "insight 2", ...]
+    return insights
 
 def calculate_valuation(player_name):
-    # 1. Get RAW stats for Phase 1 from CSVs
+    """The main engine: Aggregates CSV/SQL data and computes AI valuation."""
+    # 1. Get RAW stats for Phase 1
     raw_mp, raw_gls, raw_ast = get_raw_csv_stats(player_name)
 
-    # 2. Get ADVANCED stats for Phase 2 from SQL
-    conn = sqlite3.connect(DB_PATH) # Ensure DB_PATH is defined at the top of your file
-    query = "SELECT * FROM players WHERE name LIKE ? AND season IN ('2024-2025', '2025-2026')"
-    player_df = pd.read_sql(query, conn, params=(f"%{player_name}%",))
-    
-    if player_df.empty:
-        conn.close()
-        return {"error": "Player not found"}
-    conn.close()
-    """
-    Calculates the P-Score and Market Value for a given player.
-    """
+    # 2. Get ADVANCED stats from SQL
     conn = sqlite3.connect(DB_PATH)
-
-    # 1. Fetch the target player
     query = "SELECT * FROM players WHERE name LIKE ? AND season IN ('2024-2025', '2025-2026')"
     player_df = pd.read_sql(query, conn, params=(f"%{player_name}%",))
     
     if player_df.empty:
         conn.close()
-        return {"error": f"Player '{player_name}' not found. Please try again."}
-          
-    # 2. Performance blending and Biography lock
-    # Calculate the mean of numeric performance stats across all available seasons
-    player = player_df.mean(numeric_only=True)
-    num_records = len(player_df)
+        return {"error": "Player not found in database"}
 
-    if num_records > 1:
-        # For Veterans (2+ seasons): Take the latest data from index 1
-        latest_record = player_df.iloc[1]
-    else:
-        # For Fresh Players (1 season): Take the only data available at index 0
-        latest_record = player_df.iloc[0]
-
-    # 3. OVERWRITE: Force biographical facts and raw stats
-    player['name'] = latest_record['name']
-    player['pos'] = latest_record['pos']
-    player['squad'] = latest_record['squad']
-    player['age'] = latest_record['age']
-# 1. Calculate the TOTALS across all seasons (24/25 + 25/26)
-    # This sums the columns for every row found in player_df
-    total_90s = player_df['n90s'].sum()
-    total_xg = player_df['xg'].sum()
-    total_xag = player_df['xag'].sum()
-
-    # 2. Pin these aggregated totals to the player object
-    # We round to 1 decimal place for a clean UI
-    player['matches'] = round(float(total_90s), 1)
-    player['goals'] = round(float(total_xg), 1)
-    player['assists'] = round(float(total_xag), 1)
-
-    # Note: Biographical info like Age and Squad should still come from the LATEST season
+    # Use mean for stats, latest row for bio
+    player_avg = player_df.mean(numeric_only=True)
     latest_record = player_df.iloc[-1]
-    player['name'] = latest_record['name']
-    player['age'] = latest_record['age']
-    player['squad'] = latest_record['squad']
-    # ---------------------------
-    pos_group = get_primary_position(player['pos'], player['name'])
-    age = float(player['age'])
-    squad = str(latest_record['squad'])
-    metrics = STAT_PROFILES[pos_group]
+    
+    pos_group = get_primary_position(latest_record['pos'], latest_record['name'])
+    age = float(latest_record['age'])
+    squad = latest_record['squad']
+    metrics = STAT_PROFILES.get(pos_group, STAT_PROFILES['CM'])
 
-    # 2. Fetch the Peer Group (Same position group, >= 5 matches to remove noise)
-    # Map our custom pos_groups back to database tags so the SQL query actually finds people
-    db_search_tag = pos_group
-    if pos_group in ['AM', 'CM', 'DM']:
-        db_search_tag = 'MF'
-        
-    peer_query = f"SELECT * FROM players WHERE pos LIKE '%{db_search_tag}%' AND season IN ('2024-2025', '2025-2026') AND n90s >= 5.0"
+    # 3. Peer Group Benchmarking
+    db_tag = 'MF' if pos_group in ['AM', 'CM', 'DM'] else pos_group
+    peer_query = f"SELECT * FROM players WHERE pos LIKE '%{db_tag}%' AND season IN ('2024-2025', '2025-2026') AND n90s >= 5.0"
     peers_df = pd.read_sql(peer_query, conn)
     conn.close()
 
-    # 3. Calculate Percentile Ranks
+    # 4. Percentile Math
     percentiles = {}
     for stat, higher_is_better in metrics.items():
-        # Convert total stats to "Per 90" where necessary (excluding percentages/rates)
+        if stat not in peers_df.columns or stat not in player_avg:
+            continue
+            
         is_rate = 'pct' in stat or stat == 'gca90'
-        
-        # Safe extraction of peer values
         if is_rate:
-            peer_values = peers_df[stat].fillna(0)
-            player_val = player[stat] if pd.notna(player[stat]) else 0
+            peer_vals = peers_df[stat].fillna(0)
+            p_val = player_avg[stat]
         else:
-            # Divide by 90s for volume stats
-            peer_values = (peers_df[stat] / peers_df['n90s']).fillna(0)
-            player_val = (player[stat] / player['n90s']) if pd.notna(player[stat]) and player['n90s'] > 0 else 0
-            
-        # Calculate Percentile (0.0 to 1.0)
-        pct = stats.percentileofscore(peer_values, player_val) / 100.0
+            peer_vals = (peers_df[stat] / peers_df['n90s']).fillna(0)
+            p_val = (player_avg[stat] / player_avg['n90s']) if player_avg['n90s'] > 0 else 0
         
-        # Invert if lower is better (e.g., Miscontrols)
-        if not higher_is_better:
-            pct = 1.0 - pct
-            
+        pct = stats.percentileofscore(peer_vals, p_val) / 100.0
+        if not higher_is_better: pct = 1.0 - pct
         percentiles[stat] = pct
 
-    # 4. Compute P-Score (Average of percentiles scaled to 10)
-    # Assuming equal weighting for the experiment's simplicity, but you can adjust weights here
-    avg_percentile = sum(percentiles.values()) / len(percentiles)
-    p_score = avg_percentile * 10 
-
-    # 5. Elite Score (E) Calculation
-    # Measures the 'generational talent' premium or 'aging veteran' deflation
-    age = player['age'] if pd.notna(player['age']) else 25.0
-    elite_score = 0.0
-
-    # Bracket 1: Elite Prospect (Age <= 23)
+    # 5. Final P-Score and Valuation
+    p_score = (sum(percentiles.values()) / len(percentiles)) * 10
+    
+    # Valuation Multipliers
+    elite_score = 0
     if age <= 23 and p_score > 7.5:
-        k = 3.0
-        elite_score = (24 - age) * p_score * k
-
-    # Bracket 2: Prime Prospect (23 < Age <= 31)
+        elite_score = (24 - age) * p_score * 3.0
     elif 23 < age <= 31 and p_score > 8.0:
-        k = 5.0
-        s = (32.0 - age) / 9.0
-        elite_score = p_score * k * s
-
-    # Bracket 3: Veteran (Age >= 32)
+        elite_score = p_score * 5.0 * ((32.0 - age) / 9.0)
     elif age >= 32 and p_score > 7.0:
-        k = 2.0
-        r = 1.0 / (age - 30.0)  
-        elite_score = p_score * k * r
+        elite_score = p_score * 2.0 * (1.0 / (age - 30.0))
 
-    # 6. Final Valuation Calculation
-    # Base Value: Every point of P-Score is worth £5m, plus a basic £5m floor.
-    base_value_millions = (p_score * 5.0) + 5.0 
-    
-    # The Elite Score is added as the hidden premium
-    market_value = base_value_millions + elite_score
-    
-    scout_note = generate_scout_note(player_name, pos_group, age, squad, market_value, p_score)
+    market_value = (p_score * 5.0) + 5.0 + elite_score
 
     return {
-        "name": player_name,
-        "scout_note": scout_note,
+        "name": latest_record['name'],
+        "scout_note": generate_scout_note(latest_record['name'], pos_group, age, squad, round(market_value, 2), p_score),
         "position": pos_group,
         "matches": raw_mp,
         "goals": raw_gls,
         "assists": raw_ast,
         "market_value_m": round(market_value, 2),
         "p_score": round(p_score, 2),
-        "age": round(float(player_df.iloc[-1]['age']), 1),
-        "squad": player_df.iloc[-1]['squad'],
+        "age": age,
+        "squad": squad,
         "percentiles": {k: round(v * 100, 1) for k, v in percentiles.items()}
     }
 
 if __name__ == "__main__":
-    conn = sqlite3.connect(DB_PATH)
-    count = pd.read_sql("SELECT count(*) as total FROM players", conn).iloc[0]['total']
-    print(f"Total players in database: {count}")
-    conn.close()
-
-    test_player = "Gabriel Martinelli" 
+    # Test Run
+    test_player = "Bukayo Saka" 
     result = calculate_valuation(test_player)
     
     if "error" in result:
-        print(result["error"])
+        print(f"Error: {result['error']}")
     else:
-        print(f"\n--- Valuation Report: {result['name']} ---")
-        print(f"Position: {result['position_group']} | Age: {result['age']} | Squad: {result['squad']}")
-        print(f"P-Score:  {result['p_score']} / 10")
-        print(f"VigiBall Value: £{result['market_value_m']}m")
-        print("Stat Breakdown (Percentiles):")
-        for stat, pct in result['percentiles'].items():
-            print(f"  - {stat}: {pct}th percentile")
+        print(f"\n--- VALUATION REPORT: {result['name']} ---")
+        print(f"Bio: {result['position']} | {result['age']}y/o | {result['squad']}")
+        print(f"Phase 1 Stats: {result['matches']} MP | {result['goals']} Gls | {result['assists']} Ast")
+        print(f"AI Valuation: £{result['market_value_m']}M")
+        print(f"Scout's Note (Sample): {result['scout_note'][0]}")
