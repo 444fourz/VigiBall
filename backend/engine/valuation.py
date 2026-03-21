@@ -13,9 +13,7 @@ CSV_PATH_2526 = r"C:\Users\nayee\OneDrive - Aston University\Desktop\CS3\FYP\FYP
 
 STAT_PROFILES = {
     'FW': {'xg': True, 'gls': True, 'xag': True, 'gca90': True, 'prgc': True, 'succ%': True, 'att_pen': True},
-    'AM': {'xag': True, 'kp': True, 'prgp': True, 'gca90': True, 'prgc': True, 'att_pen': True},
-    'CM': {'xag': True, 'kp': True, 'cmp%': True, 'prgp': True, 'tkl%': True, 'int': True},
-    'DM': {'cmp%': True, 'tkl%': True, 'int': True, 'recov': True, 'prgdist': True, 'tkl+int': True},
+    'MF': {'xag': True, 'kp': True, 'cmp%': True, 'prgp': True, 'tkl%': True, 'int': True},
     'DF': {'won%': True, 'recov': True, 'prgdist': True, 'blocks': True, 'tkl+int': True, 'clr': True}
 }
 
@@ -34,14 +32,15 @@ def get_raw_csv_stats(player_name):
             except: continue
     return int(total_mp), int(total_gls), int(total_ast)
 
-def get_primary_position(pos_string, player_name):
-    overrides = {"Odegaard": "AM", "Palmer": "AM", "De Bruyne": "AM", "Rice": "DM", "Rodri": "DM"}
-    for name, pos in overrides.items():
-        if name in player_name: return pos
-    pos_string = str(pos_string).upper()
-    if 'FW' in pos_string: return 'FW'
-    if 'DF' in pos_string: return 'DF'
-    return 'CM'
+def get_primary_position(pos_string, player_name=None):
+    pos = str(pos_string).upper()
+    
+    if 'GK' in pos: return 'GK'
+    if 'FW' in pos: return 'FW'
+    if 'DF' in pos: return 'DF'
+    
+    # Standardize all Midfielders (CM, DM, AM, MF) to one 'MF' group
+    return 'MF'
 
 def generate_scout_note(name, pos, age, squad, market_value, p_score):
     return [
@@ -49,7 +48,7 @@ def generate_scout_note(name, pos, age, squad, market_value, p_score):
         f"Role: {pos}", 
         f"Performance Score: {p_score}/10",
         f"Market Context: {squad}",
-        f"AI Estimate: £{market_value}M"
+        f"VigiBall Estimate: £{market_value}M"
     ]
 
 # --- MAIN ENGINE ---
@@ -81,26 +80,46 @@ def calculate_valuation(player_name):
         player_stats = df_2526.mean(numeric_only=True) if not df_2526.empty else df_2425.mean(numeric_only=True)
 
     # Benchmarking
-    metrics = STAT_PROFILES.get(pos_group, STAT_PROFILES['CM'])
+    metrics = STAT_PROFILES.get(pos_group, STAT_PROFILES['MF'])
     # Query peers based on position to avoid the "Haaland vs Midfielders" issue
     peers_df = pd.read_sql(f"SELECT * FROM stats_2526 WHERE pos LIKE '%{pos_group}%' AND [90s] >= 5.0", conn)
     conn.close()
 
     if peers_df.empty: peers_df = df_2526 # Fallback if no peers found
 
+    # 6. Percentile Calculation
     percentiles = {}
     for stat, higher_is_better in metrics.items():
-        if stat not in peers_df.columns: continue
+        # Step A: Check if the stat exists in the peer data
+        if stat not in peers_df.columns:
+            continue
+
+        # Step B: Clean the Peer Data (Force to numbers, handle NaNs)
+        peer_series = pd.to_numeric(peers_df[stat], errors='coerce').fillna(0)
         
-        # Calculate rates (stats per 90)
-        is_rate = any(x in stat for x in ['pct', 'gca90', '%'])
-        peer_vals = peers_df[stat].fillna(0) if is_rate else (peers_df[stat] / peers_df['90s']).fillna(0)
-        p_val = player_stats[stat] if is_rate else (player_stats[stat] / player_stats['90s'])
+        # Step C: Clean the Player Data
+        p_val = pd.to_numeric(player_stats.get(stat, 0), errors='coerce')
+        if pd.isna(p_val):
+            p_val = 0
+
+        # Step D: Scale Correction (Fixes the 0.89 vs 89.9 issue)
+        # If player is 0.89 but peers are 80-90, multiply player by 100
+        if p_val > 0 and p_val < 1.0 and peer_series.max() > 1.0:
+            p_val = p_val * 100.0
+        # If player is 89.0 but peers are 0.8-0.9, divide player by 100
+        elif p_val > 1.0 and peer_series.max() <= 1.0:
+            p_val = p_val / 100.0
+
+        # Step E: Calculate the Percentile
+        # stats.percentileofscore returns 0-100; we divide by 100 for 0.0-1.0
+        pct_score = stats.percentileofscore(peer_series, p_val) / 100.0
         
-        # Calculate Percentile
-        pct = stats.percentileofscore(peer_vals, p_val) / 100.0
-        if not higher_is_better: pct = 1.0 - pct
-        percentiles[stat] = pct
+        # Step F: Apply Logic Flipped (e.g., for 'Turnovers' lower is better)
+        if not higher_is_better:
+            pct_score = 1.0 - pct_score
+            
+        # Step G: Store the final result
+        percentiles[stat] = pct_score
 
     # Scoring
     p_score = (sum(percentiles.values()) / len(percentiles)) * 10

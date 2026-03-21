@@ -54,7 +54,7 @@ function Participant() {
         } 
         // Otherwise, it's the standard mode
         else {
-            const defaults = ["Cole Palmer", "Martin Ødegaard", "William Saliba", "Cody Gakpo"]; 
+            const defaults = ["Cole Palmer", "Morgan Rogers", "Bruno Fernandes", "Florian Wirtz"]; 
             setCohort(defaults);
             setPlayer(defaults[0]);
         }
