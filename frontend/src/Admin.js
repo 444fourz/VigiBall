@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 function Admin() {
     const [results, setResults] = useState([]);
-    const [availableTests, setAvailableTests] = useState([]); // List of unique test_ids
+    const [availableTests, setAvailableTests] = useState([]); 
     const [selectedTest, setSelectedTest] = useState("ALL");
     
     const [searchQuery, setSearchQuery] = useState("");
@@ -10,10 +10,8 @@ function Admin() {
     const [basket, setBasket] = useState([]);
     const [testLink, setTestLink] = useState("");
 
-    // --- 1. DATA FETCHING (SQL BASED) ---
     const refreshData = async () => {
         try {
-            // Fetch results based on filter
             const url = selectedTest === "ALL" 
                 ? 'http://localhost:5000/api/get_results' 
                 : `http://localhost:5000/api/get_results?test_id=${selectedTest}`;
@@ -22,7 +20,6 @@ function Admin() {
             const data = await res.json();
             setResults(data);
 
-            // Also fetch the list of unique test IDs to populate the sidebar
             const testRes = await fetch('http://localhost:5000/api/admin/list-tests');
             const testData = await testRes.json();
             setAvailableTests(testData);
@@ -33,9 +30,18 @@ function Admin() {
 
     useEffect(() => {
         refreshData();
-    }, [selectedTest]); // Refresh when the selected test changes
+    }, [selectedTest]);
 
-    // --- 2. LOGIC ---
+    // --- LOGIC ---
+    const avgDelta = results.length > 0 
+        ? (results.reduce((acc, curr) => acc + Math.abs(Number(curr.final_bid) - Number(curr.initial_guess)), 0) / results.length).toFixed(1)
+        : 0;
+
+    // Calculate Global Bias Score (Average of all Weight of Advice scores)
+    const avgBias = results.length > 0
+        ? (results.reduce((acc, curr) => acc + (curr.bias_score || 0), 0) / results.length).toFixed(2)
+        : 0;
+
     const clearData = async () => {
         if (window.confirm("CRITICAL: Wipe all results from SQL?")) {
             await fetch('http://localhost:5000/api/clear_results', { method: 'POST' });
@@ -59,18 +65,14 @@ function Admin() {
         });
         const data = await res.json();
         setTestLink(`${window.location.origin}/test/${data.test_id}`);
-        refreshData(); // Refresh to see the new test in the sidebar
+        refreshData();
     };
-
-    const avgDelta = results.length > 0 
-        ? (results.reduce((acc, curr) => acc + Math.abs(Number(curr.final_bid) - Number(curr.initial_guess)), 0) / results.length).toFixed(1)
-        : 0;
 
     return (
         <div className="min-h-screen bg-[#020617] text-white p-8 font-sans">
             <div className="max-w-7xl mx-auto flex gap-8">
                 
-                {/* SIDEBAR: TEST SELECTOR */}
+                {/* SIDEBAR */}
                 <div className="w-64 shrink-0 space-y-4">
                     <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Active Experiments</h2>
                     <button 
@@ -92,7 +94,6 @@ function Admin() {
                     </div>
                 </div>
 
-                {/* MAIN CONTENT */}
                 <div className="flex-grow">
                     {/* HEADER */}
                     <div className="flex justify-between items-center mb-8 border-b border-slate-800 pb-6">
@@ -106,50 +107,27 @@ function Admin() {
                         </div>
                     </div>
 
-                    {/* CREATE TEST SUITE */}
-                    <div className="bg-slate-900 p-6 rounded-3xl border border-sky-500/10 mb-8 shadow-2xl">
-                        <div className="grid grid-cols-2 gap-6">
-                            <div>
-                                <input 
-                                    type="text" 
-                                    placeholder="Search players..." 
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-sky-500 outline-none"
-                                    onChange={(e) => searchPlayers(e.target.value)}
-                                />
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {searchResults.map(name => (
-                                        <button key={name} onClick={() => !basket.includes(name) && setBasket([...basket, name])} className="text-[10px] bg-slate-800 hover:bg-sky-500 hover:text-black p-2 rounded-lg transition-all font-bold uppercase">{name} +</button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                                <p className="text-[9px] text-slate-500 font-black uppercase mb-2">Test Cohort</p>
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    {basket.map(p => <span key={p} className="text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-1 rounded-md font-bold">{p}</span>)}
-                                </div>
-                                <button onClick={handleCreateTest} className="w-full bg-sky-500 text-black text-[10px] font-black py-3 rounded-lg uppercase tracking-widest">Generate Link</button>
-                            </div>
-                        </div>
-                        {testLink && <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-[10px] font-mono text-green-400">{testLink}</div>}
-                    </div>
-
-                    {/* ANALYTICS */}
-                    <div className="grid grid-cols-3 gap-4 mb-8">
+                    {/* ANALYTICS SUMMARY */}
+                    <div className="grid grid-cols-4 gap-4 mb-8">
                         <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
                             <p className="text-slate-500 text-[9px] font-black uppercase">Cohort Size</p>
                             <div className="text-3xl font-black text-white">{results.length}</div>
                         </div>
                         <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-                            <p className="text-slate-500 text-[9px] font-black uppercase">Mean AI Influence</p>
-                            <div className="text-3xl font-black text-green-400">£{avgDelta}M</div>
+                            <p className="text-slate-500 text-[9px] font-black uppercase">Mean Value Shift</p>
+                            <div className="text-3xl font-black text-white">£{avgDelta}M</div>
+                        </div>
+                        <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 ring-1 ring-sky-500/30">
+                            <p className="text-sky-500 text-[9px] font-black uppercase">Automation Bias Score</p>
+                            <div className="text-3xl font-black text-sky-400">{(avgBias * 100).toFixed(0)}%</div>
                         </div>
                         <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-                            <p className="text-slate-500 text-[9px] font-black uppercase">Session Mode</p>
-                            <div className="text-3xl font-black text-sky-400 italic">SQL_DB</div>
+                            <p className="text-slate-500 text-[9px] font-black uppercase">System Mode</p>
+                            <div className="text-3xl font-black text-slate-400 italic">LIVE</div>
                         </div>
                     </div>
 
-                    {/* TABLE */}
+                    {/* DATA TABLE */}
                     <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden">
                         <table className="w-full text-left text-xs">
                             <thead className="bg-slate-950 text-slate-500 uppercase font-black border-b border-slate-800">
@@ -157,23 +135,33 @@ function Admin() {
                                     <th className="p-4">User</th>
                                     <th className="p-4">Player</th>
                                     <th className="p-4">Initial</th>
-                                    <th className="p-4">AI Val</th>
-                                    <th className="p-4">Final</th>
-                                    <th className="p-4">Shift</th>
+                                    <th className="p-4">AI Value</th>
+                                    <th className="p-4">Final Bid</th>
+                                    <th className="p-4 text-sky-400">Bias Score</th>
+                                    <th className="p-4">Time Out</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800">
                                 {results.map((r, i) => (
                                     <tr key={i} className="hover:bg-slate-800/30">
-                                        <td className="p-4 font-mono text-sky-500">{r.session_id.slice(-5)}</td>
+                                        <td className="p-4 font-mono text-slate-500">{r.session_id?.slice(-5)}</td>
                                         <td className="p-4 font-bold">{r.player_name}</td>
                                         <td className="p-4 text-slate-400">£{r.initial_guess}M</td>
-                                        <td className="p-4 text-green-400 font-bold">£{r.ai_value}M</td>
+                                        <td className="p-4 text-white font-bold">£{r.ai_value}M</td>
                                         <td className="p-4 text-sky-400 font-bold">£{r.final_bid}M</td>
                                         <td className="p-4">
-                                            <span className="bg-slate-800 px-2 py-1 rounded text-[10px] font-black">
-                                                £{Math.abs(r.final_bid - r.initial_guess).toFixed(1)}M
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-16 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className="bg-sky-500 h-full" 
+                                                        style={{ width: `${(r.bias_score || 0) * 100}%` }}
+                                                    ></div>
+                                                </div>
+                                                <span className="font-black text-sky-500">{(r.bias_score || 0).toFixed(2)}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            {r.time_out === 1 ? <span className="text-red-500 font-bold">YES</span> : <span className="text-slate-600">NO</span>}
                                         </td>
                                     </tr>
                                 ))}
