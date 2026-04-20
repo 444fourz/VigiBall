@@ -2,6 +2,7 @@ import sqlite3
 import pandas as pd
 from scipy import stats  # Ensure this is installed: pip install scipy
 import os
+import random
 
 # Setup Paths
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -43,13 +44,33 @@ def get_primary_position(pos_string, player_name=None):
     return 'MF'
 
 def generate_scout_note(name, pos, age, squad, market_value, p_score):
-    return [
-        f"Subject identified: {name}", 
-        f"Role: {pos}", 
-        f"Performance Score: {p_score}/10",
-        f"Market Context: {squad}",
-        f"VigiBall Estimate: £{market_value}M"
+    # Logic for trend analysis
+    if p_score >= 8.0:
+        trend_analysis = "Elite-tier output; statistical ceiling not yet reached."
+    elif p_score >= 6.5:
+        trend_analysis = "Consistent performer; high floor with moderate variance."
+    else:
+        trend_analysis = "Performance fluctuations detected; efficiency dropping below league mean."
+
+    # Logic for age/market risk
+    if age <= 23:
+        risk_profile = f"Developmental asset. Age ({age}) suggests significant resale premium."
+    elif age >= 30:
+        risk_profile = f"Veteran profile. Valuation adjusted for diminishing physical returns and contract shelf-life."
+    else:
+        risk_profile = f"Prime-age bracket. Maximum market liquidity expected."
+
+    notes = [
+        f"INTEL: {name} ({pos}) internal audit complete.",
+        f"SQUAD CONTEXT: Subject is a key tactical component at {squad}.",
+        f"ANALYTIC TREND: {trend_analysis}",
+        f"MARKET RISK: {risk_profile}",
+        f"VIGIBALL APPRAISAL: £{market_value}M based on 24-month rolling metrics."
     ]
+
+    random.shuffle(notes)
+    
+    return notes
 
 # --- MAIN ENGINE ---
 
