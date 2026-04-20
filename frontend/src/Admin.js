@@ -37,7 +37,6 @@ function Admin() {
         ? (results.reduce((acc, curr) => acc + Math.abs(Number(curr.final_bid) - Number(curr.initial_guess)), 0) / results.length).toFixed(1)
         : 0;
 
-    // Calculate Global Bias Score (Average of all Weight of Advice scores)
     const avgBias = results.length > 0
         ? (results.reduce((acc, curr) => acc + (curr.bias_score || 0), 0) / results.length).toFixed(2)
         : 0;
@@ -65,6 +64,7 @@ function Admin() {
         });
         const data = await res.json();
         setTestLink(`${window.location.origin}/test/${data.test_id}`);
+        setBasket([]); // Clear basket after success
         refreshData();
     };
 
@@ -107,6 +107,56 @@ function Admin() {
                         </div>
                     </div>
 
+                    {/* NEW: TEST BUILDER SECTION (Restored) */}
+                    <div className="bg-slate-900 p-6 rounded-3xl border border-sky-500/10 mb-8 shadow-2xl">
+                        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Create New Test Cohort</h2>
+                        <div className="grid grid-cols-2 gap-6">
+                            <div>
+                                <input 
+                                    type="text" 
+                                    placeholder="Search players for test..." 
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-sky-500 outline-none"
+                                    onChange={(e) => searchPlayers(e.target.value)}
+                                />
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {searchResults.map(name => (
+                                        <button 
+                                            key={name} 
+                                            onClick={() => !basket.includes(name) && setBasket([...basket, name])} 
+                                            className="text-[9px] bg-slate-800 hover:bg-sky-500 hover:text-black p-2 rounded-lg transition-all font-bold uppercase"
+                                        >
+                                            {name} +
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                                <p className="text-[9px] text-slate-500 font-black uppercase mb-2">Selected Players</p>
+                                <div className="flex flex-wrap gap-2 mb-4 min-h-[40px]">
+                                    {basket.map(p => (
+                                        <span key={p} className="text-[9px] bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-1 rounded-md font-bold flex items-center gap-2">
+                                            {p}
+                                            <button onClick={() => setBasket(basket.filter(item => item !== p))} className="hover:text-red-500">×</button>
+                                        </span>
+                                    ))}
+                                </div>
+                                <button 
+                                    onClick={handleCreateTest} 
+                                    disabled={basket.length === 0}
+                                    className="w-full bg-sky-500 text-black text-[10px] font-black py-3 rounded-lg uppercase tracking-widest disabled:opacity-30"
+                                >
+                                    Generate Experiment Link
+                                </button>
+                            </div>
+                        </div>
+                        {testLink && (
+                            <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-[10px] font-mono text-green-400 flex justify-between items-center">
+                                <span>{testLink}</span>
+                                <button onClick={() => navigator.clipboard.writeText(testLink)} className="underline hover:text-white">Copy</button>
+                            </div>
+                        )}
+                    </div>
+
                     {/* ANALYTICS SUMMARY */}
                     <div className="grid grid-cols-4 gap-4 mb-8">
                         <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
@@ -128,7 +178,7 @@ function Admin() {
                     </div>
 
                     {/* DATA TABLE */}
-                    <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden">
+                    <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
                         <table className="w-full text-left text-xs">
                             <thead className="bg-slate-950 text-slate-500 uppercase font-black border-b border-slate-800">
                                 <tr>
@@ -143,7 +193,7 @@ function Admin() {
                             </thead>
                             <tbody className="divide-y divide-slate-800">
                                 {results.map((r, i) => (
-                                    <tr key={i} className="hover:bg-slate-800/30">
+                                    <tr key={i} className="hover:bg-slate-800/30 transition-colors">
                                         <td className="p-4 font-mono text-slate-500">{r.session_id?.slice(-5)}</td>
                                         <td className="p-4 font-bold">{r.player_name}</td>
                                         <td className="p-4 text-slate-400">£{r.initial_guess}M</td>
@@ -153,7 +203,7 @@ function Admin() {
                                             <div className="flex items-center gap-2">
                                                 <div className="w-16 bg-slate-800 h-1.5 rounded-full overflow-hidden">
                                                     <div 
-                                                        className="bg-sky-500 h-full" 
+                                                        className="bg-sky-500 h-full transition-all duration-500" 
                                                         style={{ width: `${(r.bias_score || 0) * 100}%` }}
                                                     ></div>
                                                 </div>
