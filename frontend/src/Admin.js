@@ -4,6 +4,8 @@ function Admin() {
     const [results, setResults] = useState([]);
     const [availableTests, setAvailableTests] = useState([]); 
     const [selectedTest, setSelectedTest] = useState("ALL");
+    const [sortOrder, setSortOrder] = useState('asc'); 
+    const [playerFilter, setPlayerFilter] = useState("ALL");
     
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
@@ -30,17 +32,36 @@ function Admin() {
 
     useEffect(() => {
         refreshData();
+        setPlayerFilter("ALL"); 
     }, [selectedTest]);
 
-    // --- LOGIC ---
-    const avgDelta = results.length > 0 
-        ? (results.reduce((acc, curr) => acc + Math.abs(Number(curr.final_bid) - Number(curr.initial_guess)), 0) / results.length).toFixed(1)
+    // Sorting Logic
+    const sortByPlayer = () => {
+        const sorted = [...results].sort((a, b) => {
+            const nameA = (a.player_name || a.player || "");
+            const nameB = (b.player_name || b.player || "");
+            return sortOrder === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+        });
+        setResults(sorted);
+        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    };
+
+    // Filter Logic
+    const uniquePlayers = ["ALL", ...new Set(results.map(r => r.player_name || r.player).filter(Boolean))];
+    const filteredResults = playerFilter === "ALL" 
+        ? results 
+        : results.filter(r => (r.player_name || r.player) === playerFilter);
+
+    // Analytics Summary Logic
+    const avgDelta = filteredResults.length > 0 
+        ? (filteredResults.reduce((acc, curr) => acc + Math.abs(Number(curr.final_bid) - Number(curr.initial_guess)), 0) / filteredResults.length).toFixed(1)
         : 0;
 
-    const avgBias = results.length > 0
-        ? (results.reduce((acc, curr) => acc + (curr.bias_score || 0), 0) / results.length).toFixed(2)
+    const avgBias = filteredResults.length > 0
+        ? (filteredResults.reduce((acc, curr) => acc + (curr.bias_score || 0), 0) / filteredResults.length).toFixed(2)
         : 0;
 
+    // Actions
     const clearData = async () => {
         if (window.confirm("CRITICAL: Wipe all results from SQL?")) {
             await fetch('http://localhost:5000/api/clear_results', { method: 'POST' });
@@ -64,7 +85,7 @@ function Admin() {
         });
         const data = await res.json();
         setTestLink(`${window.location.origin}/test/${data.test_id}`);
-        setBasket([]); // Clear basket after success
+        setBasket([]); 
         refreshData();
     };
 
@@ -72,7 +93,7 @@ function Admin() {
         <div className="min-h-screen bg-[#020617] text-white p-8 font-sans">
             <div className="max-w-7xl mx-auto flex gap-8">
                 
-                {/* SIDEBAR */}
+                {/* SIDEBAR: Experiment List */}
                 <div className="w-64 shrink-0 space-y-4">
                     <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Active Experiments</h2>
                     <button 
@@ -95,19 +116,30 @@ function Admin() {
                 </div>
 
                 <div className="flex-grow">
-                    {/* HEADER */}
+                    {/* HEADER SECTION */}
                     <div className="flex justify-between items-center mb-8 border-b border-slate-800 pb-6">
                         <div>
                             <h1 className="text-2xl font-black text-sky-400 uppercase tracking-tighter">Researcher Console</h1>
                             <p className="text-slate-500 text-xs uppercase tracking-tight">Active Filter: <span className="text-white">{selectedTest}</span></p>
                         </div>
                         <div className="flex gap-4">
-                            <button onClick={clearData} className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-4 py-2 rounded-lg text-[10px] font-bold transition-all border border-red-500/20">WIPE SQL RESULTS</button>
-                            <button onClick={refreshData} className="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-[10px] font-bold transition-all border border-slate-700">REFRESH</button>
+                            {/* Filter Dropdown */}
+                            <div className="flex flex-col">
+                                <label className="text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Filter by Player</label>
+                                <select 
+                                    value={playerFilter}
+                                    onChange={(e) => setPlayerFilter(e.target.value)}
+                                    className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-sky-400 outline-none focus:border-sky-500"
+                                >
+                                    {uniquePlayers.map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
+                                </select>
+                            </div>
+                            <button onClick={clearData} className="mt-auto bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-4 py-2 rounded-lg text-[10px] font-bold transition-all border border-red-500/20">WIPE SQL</button>
+                            <button onClick={refreshData} className="mt-auto bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-[10px] font-bold transition-all border border-slate-700">REFRESH</button>
                         </div>
                     </div>
 
-                    {/* NEW: TEST BUILDER SECTION (Restored) */}
+                    {/* TEST BUILDER SECTION: Creation & Basket */}
                     <div className="bg-slate-900 p-6 rounded-3xl border border-sky-500/10 mb-8 shadow-2xl">
                         <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Create New Test Cohort</h2>
                         <div className="grid grid-cols-2 gap-6">
@@ -152,16 +184,16 @@ function Admin() {
                         {testLink && (
                             <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-[10px] font-mono text-green-400 flex justify-between items-center">
                                 <span>{testLink}</span>
-                                <button onClick={() => navigator.clipboard.writeText(testLink)} className="underline hover:text-white">Copy</button>
+                                <button onClick={() => navigator.clipboard.writeText(testLink)} className="underline hover:text-white">Copy Link</button>
                             </div>
                         )}
                     </div>
 
-                    {/* ANALYTICS SUMMARY */}
+                    {/* ANALYTICS SUMMARY: Dynamic based on Filter */}
                     <div className="grid grid-cols-4 gap-4 mb-8">
                         <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-                            <p className="text-slate-500 text-[9px] font-black uppercase">Cohort Size</p>
-                            <div className="text-3xl font-black text-white">{results.length}</div>
+                            <p className="text-slate-500 text-[9px] font-black uppercase">Sample Size</p>
+                            <div className="text-3xl font-black text-white">{filteredResults.length}</div>
                         </div>
                         <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
                             <p className="text-slate-500 text-[9px] font-black uppercase">Mean Value Shift</p>
@@ -183,7 +215,11 @@ function Admin() {
                             <thead className="bg-slate-950 text-slate-500 uppercase font-black border-b border-slate-800">
                                 <tr>
                                     <th className="p-4">User</th>
-                                    <th className="p-4">Player</th>
+                                    <th className="p-4">
+                                        <button onClick={sortByPlayer} className="flex items-center gap-2 hover:text-sky-400 transition-colors uppercase font-black">
+                                            Player {sortOrder === 'asc' ? '↑' : '↓'}
+                                        </button>
+                                    </th>
                                     <th className="p-4">Initial</th>
                                     <th className="p-4">AI Value</th>
                                     <th className="p-4">Final Bid</th>
@@ -192,10 +228,10 @@ function Admin() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800">
-                                {results.map((r, i) => (
+                                {filteredResults.map((r, i) => (
                                     <tr key={i} className="hover:bg-slate-800/30 transition-colors">
                                         <td className="p-4 font-mono text-slate-500">{r.session_id?.slice(-5)}</td>
-                                        <td className="p-4 font-bold">{r.player_name}</td>
+                                        <td className="p-4 font-bold">{r.player_name || r.player}</td>
                                         <td className="p-4 text-slate-400">£{r.initial_guess}M</td>
                                         <td className="p-4 text-white font-bold">£{r.ai_value}M</td>
                                         <td className="p-4 text-sky-400 font-bold">£{r.final_bid}M</td>

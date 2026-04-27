@@ -79,7 +79,6 @@ def calculate_valuation(player_name):
     conn = sqlite3.connect(DB_PATH)
     search_term = f"%{player_name}%"
     
-    # Fetch Data
     df_2425 = pd.read_sql("SELECT * FROM stats_2425 WHERE player LIKE ?", conn, params=(search_term,))
     df_2526 = pd.read_sql("SELECT * FROM stats_2526 WHERE player LIKE ?", conn, params=(search_term,))
 
@@ -102,7 +101,6 @@ def calculate_valuation(player_name):
 
     # Benchmarking
     metrics = STAT_PROFILES.get(pos_group, STAT_PROFILES['MF'])
-    # Query peers based on position to avoid the "Haaland vs Midfielders" issue
     peers_df = pd.read_sql(f"SELECT * FROM stats_2526 WHERE pos LIKE '%{pos_group}%' AND [90s] >= 5.0", conn)
     conn.close()
 
@@ -146,9 +144,9 @@ def calculate_valuation(player_name):
     p_score = (sum(percentiles.values()) / len(percentiles)) * 10
     
     # Valuation
-    market_value = (p_score * 4.5) + 12.0 # Standard base
+    market_value = (p_score * 4.5) + 12.0
     
-    # Goal Scorer Scarcity Premium (The Haaland Fix)
+    # Goal Scorer Scarcity Premium
     goal_rate = raw_gls / raw_mp if raw_mp > 5 else 0
     if pos_group == "FW" and goal_rate > 0.4:
         market_value += (goal_rate * 40.0)
@@ -157,7 +155,7 @@ def calculate_valuation(player_name):
     if age < 23: market_value *= 1.3
     elif age > 31: market_value *= 0.75
     
-    big_six = ["Man City", "Arsenal", "Liverpool", "Man Utd", "Chelsea", "Tottenham", "Real Madrid", "Bayern"]
+    big_six = ["Man City", "Arsenal", "Liverpool", "Man Utd", "Chelsea", "Tottenham",]
     if any(team in squad for team in big_six): market_value += 12.0
 
     return {

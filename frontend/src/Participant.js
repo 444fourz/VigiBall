@@ -72,7 +72,7 @@ function Participant() {
   }, [player]);
 
   // --- 3. SUBMIT & LOOP LOGIC ---
-  const submitResults = async () => {
+  const submitResults = async (isTimeout = false) => {
     const bidToSave = finalBid || guess;
     await fetch('http://localhost:5000/api/save_result', {
       method: 'POST',
@@ -83,7 +83,8 @@ function Participant() {
         initial_guess: guess,
         ai_value: data.market_value_m,
         final_bid: bidToSave,
-        test_id: testId || "STANDARD"
+        test_id: testId || "STANDARD",
+        time_out: isTimeout ? 1 : 0
       })
     });
 
@@ -107,7 +108,7 @@ function Participant() {
         const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
         return () => clearTimeout(timer);
       } else {
-        setTimeout(() => submitResults(), 2000);
+        setTimeout(() => submitResults(true), 2000);
       }
     }
   }, [phase, timeLeft]);
@@ -139,7 +140,7 @@ function Participant() {
 }, [phase, data]);
 
   // --- TOOLTIP COMPONENT ---
-  const StatTooltip = ({ label }) => {
+  const StatTooltip = ({ label, originaLkEY }) => {
     const info = STAT_GLOSSARY[label.toLowerCase()] || { title: label, desc: "Performance metric." };
     return (
       <div className="group relative inline-block cursor-help">

@@ -1,0 +1,310 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    @page {
+        size: A4;
+        margin: 10mm;
+        background-color: #0f172a;
+    }
+    body {
+        font-family: 'Inter', -apple-system, sans-serif;
+        color: #f1f5f9;
+        margin: 0;
+        padding: 0;
+        background-color: #0f172a;
+    }
+    .container {
+        width: 100%;
+    }
+    .header {
+        padding: 20px;
+        background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+        border-bottom: 1px solid #334155;
+        margin-bottom: 20px;
+    }
+    h1 {
+        font-size: 18pt;
+        margin: 0;
+        color: #38bdf8;
+        letter-spacing: -0.025em;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9pt;
+        background-color: #1e293b;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    th {
+        background-color: #334155;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        text-align: left;
+        padding: 12px 15px;
+        border-bottom: 2px solid #0f172a;
+    }
+    td {
+        padding: 10px 15px;
+        border-bottom: 1px solid #334155;
+        line-height: 1.4;
+    }
+    .pos-tag {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 8pt;
+        color: white;
+    }
+    .Attacking { background-color: #ef4444; }
+    .Midfield { background-color: #3b82f6; }
+    .Defensive { background-color: #10b981; }
+    .Goalkeeper { background-color: #f59e0b; }
+    
+    tr:nth-child(even) {
+        background-color: #1e293b;
+    }
+    tr:nth-child(odd) {
+        background-color: #1a2233;
+    }
+    .category-cell {
+        color: #38bdf8;
+        font-weight: 500;
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MVPA Positional Performance Metrics Matrix</h1>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Position</th>
+                    <th style="width: 25%;">Statistic</th>
+                    <th style="width: 15%;">Category</th>
+                    <th style="width: 45%;">Reason for Inclusion</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td><span class="pos-tag Attacking">Attacking</span></td>
+                    <td style="font-weight: bold;">Expected Goals (xG) per 90</td>
+                    <td class="category-cell">Goal Threat</td>
+                    <td>Measures the quality and volume of shots taken (primary indicator).</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Attacking">Attacking</span></td>
+                    <td style="font-weight: bold;">Non-Penalty Goals (NPG) per 90</td>
+                    <td class="category-cell">Goal Output</td>
+                    <td>Measures open-play scoring efficiency.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Attacking">Attacking</span></td>
+                    <td style="font-weight: bold;">Expected Assists (xA) per 90</td>
+                    <td class="category-cell">Creation</td>
+                    <td>Measures the quality of chances created for teammates.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Attacking">Attacking</span></td>
+                    <td style="font-weight: bold;">Goal-Creating Actions (GCA)</td>
+                    <td class="category-cell">Creation</td>
+                    <td>Measures offensive actions directly leading to a goal.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Attacking">Attacking</span></td>
+                    <td style="font-weight: bold;">Progressive Carries (PCarries) per 90</td>
+                    <td class="category-cell">Progression</td>
+                    <td>Measures direct, forward movement of the ball.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Attacking">Attacking</span></td>
+                    <td style="font-weight: bold;">Successful Dribbles (%) per 90</td>
+                    <td class="category-cell">Efficiency</td>
+                    <td>Measures flair and close control effectiveness.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Attacking">Attacking</span></td>
+                    <td style="font-weight: bold;">Shots on Target Rate (%) per 90</td>
+                    <td class="category-cell">Efficiency</td>
+                    <td>Measures shot accuracy relative to attempts.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Attacking">Attacking</span></td>
+                    <td style="font-weight: bold;">Touches in the Opponent's Box per 90</td>
+                    <td class="category-cell">Positioning</td>
+                    <td>Measures presence in high-danger scoring zones.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Midfield">Midfield</span></td>
+                    <td style="font-weight: bold;">Expected Assists (xA) per 90</td>
+                    <td class="category-cell">Creation</td>
+                    <td>Measures passing quality leading to shot opportunities.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Midfield">Midfield</span></td>
+                    <td style="font-weight: bold;">Key Passes per 90</td>
+                    <td class="category-cell">Creation</td>
+                    <td>Passes that directly lead to a shot by a teammate.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Midfield">Midfield</span></td>
+                    <td style="font-weight: bold;">Pass Completion Rate (%)</td>
+                    <td class="category-cell">Retention</td>
+                    <td>Measures ball security in the midfield third.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Midfield">Midfield</span></td>
+                    <td style="font-weight: bold;">Progressive Passes (PPasses) per 90</td>
+                    <td class="category-cell">Progression</td>
+                    <td>Measures volume of line-breaking passes.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Midfield">Midfield</span></td>
+                    <td style="font-weight: bold;">Tackles Won (%)</td>
+                    <td class="category-cell">Defense</td>
+                    <td>Measures efficiency in regaining possession.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Midfield">Midfield</span></td>
+                    <td style="font-weight: bold;">Successful Pressures (%)</td>
+                    <td class="category-cell">Defense</td>
+                    <td>Measures pressure effectiveness within five seconds.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Midfield">Midfield</span></td>
+                    <td style="font-weight: bold;">Interceptions per 90</td>
+                    <td class="category-cell">Defense</td>
+                    <td>Measures reading the game and breaking up attacks.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Midfield">Midfield</span></td>
+                    <td style="font-weight: bold;">Miscontrols and Dispossessed per 90</td>
+                    <td class="category-cell">Ball Security</td>
+                    <td>Measures loss of possession under pressure (negative factor).</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Defensive">Defensive</span></td>
+                    <td style="font-weight: bold;">Aerial Duel Success Rate (%)</td>
+                    <td class="category-cell">Physicality</td>
+                    <td>Measures dominance in air battles (crucial for CBs).</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Defensive">Defensive</span></td>
+                    <td style="font-weight: bold;">Defensive Actions (DA) in Final Third per 90</td>
+                    <td class="category-cell">Positioning</td>
+                    <td>Measures proactive defending higher up the pitch.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Defensive">Defensive</span></td>
+                    <td style="font-weight: bold;">Ball Recoveries per 90</td>
+                    <td class="category-cell">Possession</td>
+                    <td>Measures how quickly a player wins back loose balls.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Defensive">Defensive</span></td>
+                    <td style="font-weight: bold;">Progressive Passing Distance (PPD) per 90</td>
+                    <td class="category-cell">Progression</td>
+                    <td>Measures ground gained through passing (ball-playing CBs).</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Defensive">Defensive</span></td>
+                    <td style="font-weight: bold;">Long Pass Completion Rate (%)</td>
+                    <td class="category-cell">Build-up</td>
+                    <td>Measures accuracy in launching attacks from the back.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Defensive">Defensive</span></td>
+                    <td style="font-weight: bold;">Blocks (Shots/Passes) per 90</td>
+                    <td class="category-cell">Reliability</td>
+                    <td>Measures body positioning and blocking ability.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Defensive">Defensive</span></td>
+                    <td style="font-weight: bold;">Tackles/Interceptions Attempted per 90</td>
+                    <td class="category-cell">Activity</td>
+                    <td>Measures the volume of defensive engagement.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Defensive">Defensive</span></td>
+                    <td style="font-weight: bold;">Clearances per 90</td>
+                    <td class="category-cell">Clearance</td>
+                    <td>Measures effective removal of danger from the box.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Goalkeeper">Goalkeeper</span></td>
+                    <td style="font-weight: bold;">PSxG-GA per 90</td>
+                    <td class="category-cell">Shot-Stopping</td>
+                    <td>Compares expected goals faced (after the shot) to goals conceded.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Goalkeeper">Goalkeeper</span></td>
+                    <td style="font-weight: bold;">Save Percentage</td>
+                    <td class="category-cell">Shot-Stopping</td>
+                    <td>Traditional baseline of goalkeeper effectiveness.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Goalkeeper">Goalkeeper</span></td>
+                    <td style="font-weight: bold;">Crosses Stopped (%)</td>
+                    <td class="category-cell">Command</td>
+                    <td>Ability to proactively claim or punch crosses.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Goalkeeper">Goalkeeper</span></td>
+                    <td style="font-weight: bold;">Launch Completion Rate (%)</td>
+                    <td class="category-cell">Distribution</td>
+                    <td>Accuracy of goal kicks and long throws.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Goalkeeper">Goalkeeper</span></td>
+                    <td style="font-weight: bold;">Passes Completed Short/Medium (%)</td>
+                    <td class="category-cell">Distribution</td>
+                    <td>Accuracy in initiating build-up play from the back.</td>
+                </tr>
+                
+                <tr>
+                    <td><span class="pos-tag Goalkeeper">Goalkeeper</span></td>
+                    <td style="font-weight: bold;">DAOTB per 90</td>
+                    <td class="category-cell">Sweeper</td>
+                    <td>Proactive positioning to clear danger outside the box.</td>
+                </tr>
+                
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
