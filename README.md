@@ -29,7 +29,7 @@ The system is designed to measure Automation Bias, which is the human tendency t
 
 **1. Clone the repository**
 ```bash
-git clone [https://github.com/444fourz/VigiBall](https://github.com/444fourz/VigiBall)
+git clone [https://github.com/444fourz/VigiBall]
 cd VigiBall
 ```
 
