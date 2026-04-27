@@ -31,3 +31,36 @@ The system is designed to measure Automation Bias, which is the human tendency t
 ```bash
 git clone [https://github.com/444fourz/VigiBall](https://github.com/444fourz/VigiBall)
 cd VigiBall
+```
+**2. Backend Setup""
+```bash
+cd backend
+python app.py
+```
+*The Flask server will start on http://localhost:5000.*
+
+**3. Frontend Setup**
+*(Open this in a new terminal)*
+```bash
+cd frontend
+npm install
+npm start
+```
+*The React application will open on http://localhost:3000.*
+
+---
+
+**Key Files**
+  **backend/engine/valuation.py:** The MVPA calculation engine and statistical weighting.
+
+  **backend/app.py:** Flask API routes and Weight of Advice (WoA) calculation logic.**
+
+  **frontend/src/Participant.js:** The core experimental UI, timer logic, and HCI triggers.
+
+  **frontend/src/Admin.js:** Researcher console for data analytics and bias tracking.
+
+  **backend/database/vigiball_v2.db:** The main database file used.**
+
+ **License**
+This project was developed for academic purposes at Aston University. 
+All player data is sourced from Kaggle (Hubert Sidorowicz).
