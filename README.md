@@ -19,7 +19,7 @@ Node.js and npm
 
 Installation and Setup
 Clone the repository
-git clone [your-repository-link]
+git clone https://github.com/444fourz/VigiBall
 cd VigiBall
 
 Backend Setup
