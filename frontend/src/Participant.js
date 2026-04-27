@@ -38,6 +38,8 @@ function Participant() {
   const [timeLeft, setTimeLeft] = useState(30);
   const [activeNote, setActiveNote] = useState("");
   const [showNote, setShowNote] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hover, setHover] = useState(0);
   console.log("Current Cohort:", cohort, "Current Player:", player);
 
 
@@ -97,9 +99,24 @@ function Participant() {
       setPhase(1);
       setTimeLeft(30);
     } else {
-      setPhase(4);
+      setPhase(5);
     }
   };
+
+  // --- CALCULATE BIAS FOR THE REVEAL ---
+  const calculateCurrentBias = () => {
+    const initial = parseFloat(guess || 0);
+    const aiVal = parseFloat(data?.market_value_m || 0);
+    const final = parseFloat(finalBid || guess || 0);
+
+    const denominator = Math.abs(aiVal - initial);
+    if (denominator === 0) return 0;
+
+    // Weight of Advice (WoA) Formula: |Final - Initial| / |AI - Initial|
+    return Math.max(0, Math.min(Math.abs(final - initial) / denominator, 1.0));
+  };
+
+  const avgBias = calculateCurrentBias();
 
   // --- TIMER & SCOUT NOTES ---
   useEffect(() => {
@@ -114,30 +131,30 @@ function Participant() {
   }, [phase, timeLeft]);
 
   useEffect(() => {
-  if (phase === 3 && data?.scout_note?.length > 0) {
-    let lastIndex = -1;
+    if (phase === 3 && data?.scout_note?.length > 0) {
+      let lastIndex = -1;
 
-    const showNextNote = () => {
-      let nextIndex;
-      // Ensure we don't show the same note twice consecutively
-      do {
-        nextIndex = Math.floor(Math.random() * data.scout_note.length);
-      } while (nextIndex === lastIndex && data.scout_note.length > 1);
+      const showNextNote = () => {
+        let nextIndex;
+        // Ensure we don't show the same note twice consecutively
+        do {
+          nextIndex = Math.floor(Math.random() * data.scout_note.length);
+        } while (nextIndex === lastIndex && data.scout_note.length > 1);
 
-      lastIndex = nextIndex;
-      setActiveNote(data.scout_note[nextIndex]);
-      setShowNote(true);
+        lastIndex = nextIndex;
+        setActiveNote(data.scout_note[nextIndex]);
+        setShowNote(true);
 
-      // Display for 4 seconds, then fade out
-      setTimeout(() => setShowNote(false), 4000);
-    };
+        // Display for 4 seconds, then fade out
+        setTimeout(() => setShowNote(false), 4000);
+      };
 
-    showNextNote(); // Show first note immediately
-    const interval = setInterval(showNextNote, 6000);
+      showNextNote(); // Show first note immediately
+      const interval = setInterval(showNextNote, 6000);
 
-    return () => clearInterval(interval);
-  }
-}, [phase, data]);
+      return () => clearInterval(interval);
+    }
+  }, [phase, data]);
 
   // --- TOOLTIP COMPONENT ---
   const StatTooltip = ({ label, originaLkEY }) => {
@@ -290,84 +307,84 @@ function Participant() {
         )}
 
         {phase === 3 && (
-  /* 1. We wrap Phase 3 in a relative container to position the floating note against the whole screen/area */
-  <div className="relative w-full">
-    
-    {/* THE DECISION CARD */}
-    <div className="max-w-md mx-auto bg-slate-900 p-10 rounded-[2rem] border border-slate-800 text-center relative shadow-2xl">
-      {timeLeft === 0 && (
-        <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center text-white font-black uppercase">
-          Time Expired - Saving...
-        </div>
-      )}
+          /* 1. We wrap Phase 3 in a relative container to position the floating note against the whole screen/area */
+          <div className="relative w-full">
 
-      <div className="mb-8">
-        <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Decision Window</div>
-        <div className={`text-3xl font-mono font-black ${timeLeft < 10 ? 'text-red-500 animate-pulse' : 'text-white'}`}>
-          00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
-        </div>
-      </div>
+            {/* THE DECISION CARD */}
+            <div className="max-w-md mx-auto bg-slate-900 p-10 rounded-[2rem] border border-slate-800 text-center relative shadow-2xl">
+              {timeLeft === 0 && (
+                <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center text-white font-black uppercase">
+                  Time Expired - Saving...
+                </div>
+              )}
 
-      <div className="bg-slate-950 p-6 rounded-2xl mb-8 border border-slate-800">
-        <p className="text-[10px] text-slate-500 font-black mb-1 uppercase">AI Recommended Price</p>
-        <p className="text-4xl font-black text-green-400">£{data?.market_value_m}M</p>
-      </div>
+              <div className="mb-8">
+                <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Decision Window</div>
+                <div className={`text-3xl font-mono font-black ${timeLeft < 10 ? 'text-red-500 animate-pulse' : 'text-white'}`}>
+                  00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
+                </div>
+              </div>
 
-      <input
-        type="number"
-        className="w-full bg-slate-800 p-5 rounded-xl text-center text-3xl font-black mb-6 border border-slate-700 outline-none focus:border-sky-500"
-        placeholder="Final £M"
-        value={finalBid}
-        onChange={(e) => setFinalBid(e.target.value)}
-      />
+              <div className="bg-slate-950 p-6 rounded-2xl mb-8 border border-slate-800">
+                <p className="text-[10px] text-slate-500 font-black mb-1 uppercase">AI Recommended Price</p>
+                <p className="text-4xl font-black text-green-400">£{data?.market_value_m}M</p>
+              </div>
 
-      <button 
-        onClick={submitResults} 
-        disabled={!finalBid} 
-        className="w-full py-5 bg-green-500 text-black rounded-xl font-black uppercase tracking-widest disabled:opacity-20"
-      >
-        Submit Final Bid
-      </button>
-    </div>
+              <input
+                type="number"
+                className="w-full bg-slate-800 p-5 rounded-xl text-center text-3xl font-black mb-6 border border-slate-700 outline-none focus:border-sky-500"
+                placeholder="Final £M"
+                value={finalBid}
+                onChange={(e) => setFinalBid(e.target.value)}
+              />
 
-    {/* 2. FLOATING SCOUT NOTE - Repositioned to the top-right of the card */}
-<div className={`absolute top-24 -right-16 w-72 transition-all duration-700 ease-in-out transform z-[60]
+              <button
+                onClick={submitResults}
+                disabled={!finalBid}
+                className="w-full py-5 bg-green-500 text-black rounded-xl font-black uppercase tracking-widest disabled:opacity-20"
+              >
+                Submit Final Bid
+              </button>
+            </div>
+
+            {/* 2. FLOATING SCOUT NOTE - Repositioned to the top-right of the card */}
+            <div className={`absolute top-24 -right-16 w-72 transition-all duration-700 ease-in-out transform z-[60]
   ${showNote ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-90'}`}>
-      
-      <div className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-sky-600 to-blue-500 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-        
-        <div className="relative bg-slate-900/95 backdrop-blur-xl border border-sky-500/30 text-sky-100 p-5 rounded-xl shadow-2xl">
-          <div className="flex items-center justify-between mb-3 pb-2 border-b border-sky-500/20">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
-              </span>
-              <span className="text-[10px] uppercase tracking-[0.2em] font-black text-sky-400">
-                Scout's Note
-              </span>
-            </div>
-            <span className="text-[8px] font-mono text-sky-600">INTEL-V2</span>
-          </div>
 
-          <p className="text-[12px] leading-relaxed font-medium italic text-slate-200">
-            <span className="text-sky-500 font-mono mr-1">{">"}</span>
-            {activeNote}
-          </p>
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-sky-600 to-blue-500 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
 
-          <div className="mt-4 flex gap-1.5">
-            <div className="h-1 w-12 bg-sky-500/20 rounded-full overflow-hidden">
-              <div className="h-full bg-sky-500 animate-pulse w-2/3"></div>
+                <div className="relative bg-slate-900/95 backdrop-blur-xl border border-sky-500/30 text-sky-100 p-5 rounded-xl shadow-2xl">
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-sky-500/20">
+                    <div className="flex items-center gap-2">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+                      </span>
+                      <span className="text-[10px] uppercase tracking-[0.2em] font-black text-sky-400">
+                        Scout's Note
+                      </span>
+                    </div>
+                    <span className="text-[8px] font-mono text-sky-600">INTEL-V2</span>
+                  </div>
+
+                  <p className="text-[12px] leading-relaxed font-medium italic text-slate-200">
+                    <span className="text-sky-500 font-mono mr-1">{">"}</span>
+                    {activeNote}
+                  </p>
+
+                  <div className="mt-4 flex gap-1.5">
+                    <div className="h-1 w-12 bg-sky-500/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-sky-500 animate-pulse w-2/3"></div>
+                    </div>
+                    <div className="h-1 w-2 bg-sky-500/20 rounded-full"></div>
+                    <div className="h-1 w-2 bg-sky-500/20 rounded-full"></div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="h-1 w-2 bg-sky-500/20 rounded-full"></div>
-            <div className="h-1 w-2 bg-sky-500/20 rounded-full"></div>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+        )}
 
         {phase === 4 && (
           <div className="text-center py-20 animate-in fade-in">
@@ -375,6 +392,79 @@ function Participant() {
             <h2 className="text-5xl font-black text-sky-400 mb-4 italic">SESSION COMPLETE</h2>
             <p className="text-slate-500 max-w-sm mx-auto">Your evaluations have been successfully logged. Your contribution helps us understand human-AI interaction in high-stakes markets.</p>
             <button onClick={() => window.location.href = '/'} className="mt-10 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white underline decoration-sky-500 underline-offset-8 transition-all">Return to Terminal</button>
+          </div>
+        )}
+
+        {phase === 5 && (
+          <div className="max-w-2xl mx-auto bg-slate-900 p-12 rounded-[3rem] border border-sky-500/30 shadow-[0_0_50px_-12px_rgba(14,165,233,0.2)] animate-in zoom-in duration-700">
+            <div className="text-center mb-10">
+              <h2 className="text-5xl font-black text-white mb-2 italic tracking-tighter">THE REVEAL</h2>
+              <p className="text-sky-500 font-bold uppercase tracking-[0.3em] text-[10px]">Post-Experiment Cognitive Audit</p>
+            </div>
+
+            <div className="space-y-8">
+              <div className="bg-slate-950 p-8 rounded-3xl border border-slate-800 relative overflow-hidden">
+                {/* Decorative background element */}
+                <div className="absolute -right-4 -top-4 text-8xl opacity-5 grayscale">🧠</div>
+
+                <h3 className="text-xs font-black text-slate-500 uppercase mb-4 tracking-widest">Your Influence Profile</h3>
+                <p className="text-slate-300 leading-relaxed text-sm">
+                  During the "Elite Conflict" phase (e.g., the Bruno Fernandes appraisal), the system intentionally provided a <span className="text-red-400 font-bold">suppressed valuation</span>.
+                </p>
+                <p className="mt-4 text-slate-300 leading-relaxed text-sm">
+                  Your responses indicated a <span className="text-sky-400 font-bold">{(avgBias * 100).toFixed(0)}% reliance</span> on the AI's "Scout Notes" and metrics, even when they contradicted market reality.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                  <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Status</p>
+                  <p className={`text-xl font-black ${avgBias > 0.6 ? 'text-red-500' : 'text-green-500'}`}>
+                    {avgBias > 0.6 ? "Susceptible" : "Resistant"}
+                  </p>
+                </div>
+                <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                  <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Cognitive Load</p>
+                  <p className="text-xl font-black text-white">High (Timed)</p>
+                </div>
+              </div>
+
+              <p className="text-center text-[10px] text-slate-600 italic px-10">
+                This study explores how professional jargon and time-pressure bypass critical skepticism. Thank you for contributing to the VigiBall research project.
+              </p>
+
+              {/* EXPERIENCE RATING */}
+              <div className="mt-8 pt-8 border-t border-slate-800 text-center">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Rate Your Experience</p>
+                <div className="flex justify-center gap-3">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      className={`text-3xl transition-all duration-200 transform ${star <= (hover || rating) ? 'scale-125 grayscale-0' : 'grayscale opacity-30'
+                        }`}
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHover(star)}
+                      onMouseLeave={() => setHover(0)}
+                    >
+                      {star <= (hover || rating) ? '⭐' : '☆'}
+                    </button>
+                  ))}
+                </div>
+                {rating > 0 && (
+                  <p className="mt-4 text-[10px] text-sky-400 font-bold animate-pulse">
+                    Feedback Logged. Thank you for your assessment.
+                  </p>
+                )}
+              </div>
+
+              <button
+                onClick={() => window.location.href = '/'}
+                className="w-full py-4 mt-4 bg-slate-800 hover:bg-sky-500 hover:text-black transition-all rounded-xl font-black uppercase tracking-widest text-xs"
+              >
+                Terminate Session
+              </button>
+            </div>
           </div>
         )}
       </div>
