@@ -6,15 +6,12 @@ import uuid
 import json
 import os
 import pandas as pd
-
 app = Flask(__name__)
 CORS(app) 
 app.config['JSON_SORT_KEYS'] = False
-
 DB_PATH = r"C:\Users\nayee\OneDrive - Aston University\Desktop\CS3\FYP\FYP Workspace\VigiBall\backend\vigiball_v2.db"
 
-# --- EXPERIMENT DATA ROUTES ---
-
+# Experiment data results
 @app.route('/api/get_results', methods=['GET'])
 def get_results():
     """Fetches participant responses, optionally filtered by test_id."""
@@ -53,14 +50,13 @@ def save_result():
         final = float(data.get('final_bid', 0))
         time_out = 1 if data.get('time_out') else 0
 
-        # --- BIAS CALCULATION (WoA) ---
+        # WoA/Bias calculation logic
         denominator = abs(ai_val - initial)
         if denominator == 0:
             bias_score = 0.0
         else:
             # We cap at 1.0 to ensure the chart stays within 0-100% scale
             bias_score = round(max(0, min(abs(final - initial) / denominator, 1.0)), 2)
-
         conn = sqlite3.connect(DB_PATH)
         conn.execute("""
             INSERT INTO experiment_results 
@@ -69,9 +65,7 @@ def save_result():
         """, (test_id, session_id, player, initial, ai_val, final, bias_score, time_out))
         conn.commit()
         conn.close()
-
         return jsonify({"status": "success", "bias_score": bias_score})
-
     except Exception as e:
         print(f"Error saving result: {e}")
         return jsonify({"error": str(e)}), 500
@@ -111,8 +105,7 @@ def clear_results():
     finally:
         conn.close()
 
-# --- ADMIN / TEST BUILDER ROUTES ---
-
+# Admin routes
 @app.route('/api/admin/save-test', methods=['POST'])
 def save_test():
     data = request.json
@@ -164,18 +157,15 @@ def search_players():
     finally:
         conn.close()
 
-# --- ENGINE ROUTES ---
-
+# Engine routes
 @app.route('/api/evaluate', methods=['GET'])
 def evaluate():
     player_name = request.args.get('name')
     if not player_name:
         return jsonify({"error": "No name provided"}), 400
     return jsonify(calculate_valuation(player_name))
-
 @app.route('/')
 def home():
     return "VigiBall Backend is Active."
-
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

@@ -45,7 +45,7 @@ function Participant() {
 
   useEffect(() => {
     const loadSession = async () => {
-      // If there is a testId in the URL, load that specific test
+      // Load a specific test if its in the URL
       if (testId) {
         try {
           const res = await fetch(`http://localhost:5000/api/get-test/${testId}`);
@@ -54,7 +54,7 @@ function Participant() {
           setPlayer(result.player_names[0]);
         } catch (err) { console.error("Test load failed", err); }
       }
-      // Otherwise, it's the standard mode
+      // Else run it in standard mode with these standard players
       else {
         const defaults = ["Cole Palmer", "Morgan Rogers", "Bruno Fernandes", "Florian Wirtz"];
         setCohort(defaults);
@@ -64,7 +64,7 @@ function Participant() {
     loadSession();
   }, [testId]);
 
-  // --- 2. FETCH PLAYER STATS ---
+  // Fetch player stats
   useEffect(() => {
     if (!player) return;
     fetch(`http://localhost:5000/api/evaluate?name=${player}`)
@@ -73,7 +73,7 @@ function Participant() {
       .catch(err => console.error(err));
   }, [player]);
 
-  // --- 3. SUBMIT & LOOP LOGIC ---
+  // Logic when submitting a test
   const submitResults = async (isTimeout = false) => {
     const bidToSave = finalBid || guess;
     await fetch('http://localhost:5000/api/save_result', {
@@ -103,21 +103,18 @@ function Participant() {
     }
   };
 
-  // --- CALCULATE BIAS FOR THE REVEAL ---
+  // Calculate the bias for that session to be shown at the end
   const calculateCurrentBias = () => {
     const initial = parseFloat(guess || 0);
     const aiVal = parseFloat(data?.market_value_m || 0);
     const final = parseFloat(finalBid || guess || 0);
-
     const denominator = Math.abs(aiVal - initial);
     if (denominator === 0) return 0;
-
-    // Weight of Advice (WoA) Formula: |Final - Initial| / |AI - Initial|
+    // Returns the WoA/Bias score
     return Math.max(0, Math.min(Math.abs(final - initial) / denominator, 1.0));
   };
 
   const avgBias = calculateCurrentBias();
-
   // --- TIMER & SCOUT NOTES ---
   useEffect(() => {
     if (phase === 3) {
@@ -133,10 +130,9 @@ function Participant() {
   useEffect(() => {
     if (phase === 3 && data?.scout_note?.length > 0) {
       let lastIndex = -1;
-
       const showNextNote = () => {
         let nextIndex;
-        // Ensure we don't show the same note twice consecutively
+        // Ensure we don't show the same note twice in a row
         do {
           nextIndex = Math.floor(Math.random() * data.scout_note.length);
         } while (nextIndex === lastIndex && data.scout_note.length > 1);
@@ -144,19 +140,16 @@ function Participant() {
         lastIndex = nextIndex;
         setActiveNote(data.scout_note[nextIndex]);
         setShowNote(true);
-
         // Display for 4 seconds, then fade out
         setTimeout(() => setShowNote(false), 4000);
       };
-
       showNextNote(); // Show first note immediately
       const interval = setInterval(showNextNote, 6000);
-
       return () => clearInterval(interval);
     }
   }, [phase, data]);
 
-  // --- TOOLTIP COMPONENT ---
+  // Stat tooltip with all of the important stats in Phase 2
   const StatTooltip = ({ label, originaLkEY }) => {
     const info = STAT_GLOSSARY[label.toLowerCase()] || { title: label, desc: "Performance metric." };
     return (
@@ -177,21 +170,18 @@ function Participant() {
         <span className="text-sky-400 font-black group-hover:text-white transition-colors">
           {(percentage * 100).toFixed(0)}%
         </span>
-
         {/* The Pop-up Box */}
         <div className="absolute bottom-full right-0 mb-2 w-56 p-3 bg-slate-950 border border-sky-500/40 rounded-xl opacity-0 group-hover:opacity-100 transition-all z-50 pointer-events-none shadow-2xl">
           <p className="text-slate-500 font-black text-[9px] uppercase mb-1">Contextual Rank</p>
           <p className="text-white text-[11px] leading-tight mb-2">
             This player ranks in the <span className="text-sky-400 font-bold">{(percentage * 100).toFixed(0)}th percentile</span> for {statLabel}.
           </p>
-
           {rawValue && (
             <div className="pt-2 border-t border-slate-800">
               <p className="text-slate-500 text-[9px] uppercase">Raw Statistic</p>
               <p className="text-sky-400 font-mono text-xs">{rawValue}</p>
             </div>
           )}
-
           <p className="mt-2 text-[8px] text-slate-600 italic">
             *Compared against all Active Midfielders (MF) in the 25/26 Season.
           </p>
@@ -203,7 +193,6 @@ function Participant() {
   return (
     <div className="min-h-screen bg-[#020617] text-white p-12">
       <div className="max-w-4xl mx-auto">
-
         {/* PROGRESS BAR */}
         {phase < 4 && (
           <div className="mb-8 flex justify-between items-center bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
@@ -215,7 +204,6 @@ function Participant() {
             </div>
           </div>
         )}
-
         {phase === 1 && (
           <div className="bg-slate-900 p-10 rounded-[2rem] border border-slate-800 shadow-2xl animate-in fade-in zoom-in">
             <div className="flex flex-col md:flex-row gap-10 items-center">
@@ -228,17 +216,14 @@ function Participant() {
                   onError={(e) => e.target.src = "https://via.placeholder.com/200?text=No+Photo"}
                 />
               </div>
-
               <div className="flex-grow w-full">
                 <h2 className="text-sky-400 font-black uppercase text-xs mb-2 tracking-widest">Phase 1: Identification</h2>
                 <h1 className="text-4xl font-black mb-6">{player}</h1>
-
                 <div className="grid grid-cols-3 gap-4 mb-8 bg-slate-950 p-6 rounded-2xl">
                   <div><p className="text-[10px] text-slate-500 uppercase">Games</p><p className="text-2xl font-bold">{data?.matches || "-"}</p></div>
                   <div><p className="text-[10px] text-slate-500 uppercase">Goals</p><p className="text-2xl font-bold text-green-400">{data?.goals || "0"}</p></div>
                   <div><p className="text-[10px] text-slate-500 uppercase">Assists</p><p className="text-2xl font-bold text-sky-400">{data?.assists || "0"}</p></div>
                 </div>
-
                 <input
                   type="number"
                   className="w-full bg-slate-800 p-4 rounded-xl border border-slate-700 mb-4 outline-none focus:ring-2 focus:ring-sky-500"
@@ -257,7 +242,6 @@ function Participant() {
             </div>
           </div>
         )}
-
         {phase === 2 && data && (
           <div className="bg-slate-900 p-10 rounded-[2.5rem] border border-slate-800 animate-in slide-in-from-bottom-4">
             <div className="flex justify-between items-start mb-8">
@@ -270,7 +254,6 @@ function Participant() {
                 <p className="text-4xl font-black text-green-400">£{data.market_value_m}M</p>
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
               <div>
                 <h3 className="text-xs font-black text-slate-500 uppercase mb-6 tracking-widest">Performance Percentiles</h3>
@@ -279,7 +262,6 @@ function Participant() {
                     <div className="flex justify-between text-[10px] font-bold mb-1">
                       {/* 1. Stat Name Tooltip (Left Side) */}
                       <StatTooltip label={stat} />
-
                       {/* 2. Percentile Tooltip (Right Side) */}
                       <PercentileTooltip
                         percentage={val / 100} // Convert 85 back to 0.85 for the logic
@@ -287,7 +269,6 @@ function Participant() {
                         statLabel={STAT_GLOSSARY[stat.toLowerCase()]?.title || stat}
                       />
                     </div>
-
                     {/* Visual Progress Bar */}
                     <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
                       <div
@@ -305,11 +286,9 @@ function Participant() {
             </div>
           </div>
         )}
-
         {phase === 3 && (
           /* 1. We wrap Phase 3 in a relative container to position the floating note against the whole screen/area */
           <div className="relative w-full">
-
             {/* THE DECISION CARD */}
             <div className="max-w-md mx-auto bg-slate-900 p-10 rounded-[2rem] border border-slate-800 text-center relative shadow-2xl">
               {timeLeft === 0 && (
@@ -317,19 +296,16 @@ function Participant() {
                   Time Expired - Saving...
                 </div>
               )}
-
               <div className="mb-8">
                 <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Decision Window</div>
                 <div className={`text-3xl font-mono font-black ${timeLeft < 10 ? 'text-red-500 animate-pulse' : 'text-white'}`}>
                   00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
                 </div>
               </div>
-
               <div className="bg-slate-950 p-6 rounded-2xl mb-8 border border-slate-800">
                 <p className="text-[10px] text-slate-500 font-black mb-1 uppercase">AI Recommended Price</p>
                 <p className="text-4xl font-black text-green-400">£{data?.market_value_m}M</p>
               </div>
-
               <input
                 type="number"
                 className="w-full bg-slate-800 p-5 rounded-xl text-center text-3xl font-black mb-6 border border-slate-700 outline-none focus:border-sky-500"
@@ -337,7 +313,6 @@ function Participant() {
                 value={finalBid}
                 onChange={(e) => setFinalBid(e.target.value)}
               />
-
               <button
                 onClick={submitResults}
                 disabled={!finalBid}
@@ -346,14 +321,10 @@ function Participant() {
                 Submit Final Bid
               </button>
             </div>
-
-            {/* 2. FLOATING SCOUT NOTE - Repositioned to the top-right of the card */}
             <div className={`absolute top-24 -right-16 w-72 transition-all duration-700 ease-in-out transform z-[60]
   ${showNote ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-90'}`}>
-
               <div className="relative group">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-sky-600 to-blue-500 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-
                 <div className="relative bg-slate-900/95 backdrop-blur-xl border border-sky-500/30 text-sky-100 p-5 rounded-xl shadow-2xl">
                   <div className="flex items-center justify-between mb-3 pb-2 border-b border-sky-500/20">
                     <div className="flex items-center gap-2">
@@ -367,12 +338,10 @@ function Participant() {
                     </div>
                     <span className="text-[8px] font-mono text-sky-600">INTEL-V2</span>
                   </div>
-
                   <p className="text-[12px] leading-relaxed font-medium italic text-slate-200">
                     <span className="text-sky-500 font-mono mr-1">{">"}</span>
                     {activeNote}
                   </p>
-
                   <div className="mt-4 flex gap-1.5">
                     <div className="h-1 w-12 bg-sky-500/20 rounded-full overflow-hidden">
                       <div className="h-full bg-sky-500 animate-pulse w-2/3"></div>
@@ -385,7 +354,6 @@ function Participant() {
             </div>
           </div>
         )}
-
         {phase === 4 && (
           <div className="text-center py-20 animate-in fade-in">
             <div className="text-6xl mb-6">🎯</div>
@@ -394,19 +362,16 @@ function Participant() {
             <button onClick={() => window.location.href = '/'} className="mt-10 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white underline decoration-sky-500 underline-offset-8 transition-all">Return to Terminal</button>
           </div>
         )}
-
         {phase === 5 && (
           <div className="max-w-2xl mx-auto bg-slate-900 p-12 rounded-[3rem] border border-sky-500/30 shadow-[0_0_50px_-12px_rgba(14,165,233,0.2)] animate-in zoom-in duration-700">
             <div className="text-center mb-10">
               <h2 className="text-5xl font-black text-white mb-2 italic tracking-tighter">THE REVEAL</h2>
               <p className="text-sky-500 font-bold uppercase tracking-[0.3em] text-[10px]">Post-Experiment Cognitive Audit</p>
             </div>
-
             <div className="space-y-8">
               <div className="bg-slate-950 p-8 rounded-3xl border border-slate-800 relative overflow-hidden">
                 {/* Decorative background element */}
                 <div className="absolute -right-4 -top-4 text-8xl opacity-5 grayscale">🧠</div>
-
                 <h3 className="text-xs font-black text-slate-500 uppercase mb-4 tracking-widest">Your Influence Profile</h3>
                 <p className="text-slate-300 leading-relaxed text-sm">
                   During the "Elite Conflict" phase (e.g., the Bruno Fernandes appraisal), the system intentionally provided a <span className="text-red-400 font-bold">suppressed valuation</span>.
@@ -415,7 +380,6 @@ function Participant() {
                   Your responses indicated a <span className="text-sky-400 font-bold">{(avgBias * 100).toFixed(0)}% reliance</span> on the AI's "Scout Notes" and metrics, even when they contradicted market reality.
                 </p>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
                   <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Status</p>
@@ -428,12 +392,10 @@ function Participant() {
                   <p className="text-xl font-black text-white">High (Timed)</p>
                 </div>
               </div>
-
               <p className="text-center text-[10px] text-slate-600 italic px-10">
                 This study explores how professional jargon and time-pressure bypass critical skepticism. Thank you for contributing to the VigiBall research project.
               </p>
-
-              {/* EXPERIENCE RATING */}
+              {/* Experience rating */}
               <div className="mt-8 pt-8 border-t border-slate-800 text-center">
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Rate Your Experience</p>
                 <div className="flex justify-center gap-3">
@@ -457,7 +419,6 @@ function Participant() {
                   </p>
                 )}
               </div>
-
               <button
                 onClick={() => window.location.href = '/'}
                 className="w-full py-4 mt-4 bg-slate-800 hover:bg-sky-500 hover:text-black transition-all rounded-xl font-black uppercase tracking-widest text-xs"
@@ -471,5 +432,4 @@ function Participant() {
     </div>
   );
 }
-
 export default Participant;

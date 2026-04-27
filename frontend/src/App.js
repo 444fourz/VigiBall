@@ -11,11 +11,10 @@ function App() {
         <Route path="/" element={<Home />} />
         {/* Standard mode */}
         <Route path="/standard" element={<Participant />} />
-        {/* Researcher/Special Link mode */}
+        {/* Researcher test created mode */}
         <Route path="/test/:testId" element={<Participant />} />
         {/* Admin Console */}
         <Route path="/admin" element={<Admin />} />
-        
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>

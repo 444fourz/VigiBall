@@ -2,22 +2,21 @@ import React, { useState, useEffect } from 'react';
 
 function Admin() {
     const [results, setResults] = useState([]);
-    const [availableTests, setAvailableTests] = useState([]); 
+    const [availableTests, setAvailableTests] = useState([]);
     const [selectedTest, setSelectedTest] = useState("ALL");
-    const [sortOrder, setSortOrder] = useState('asc'); 
+    const [sortOrder, setSortOrder] = useState('asc');
     const [playerFilter, setPlayerFilter] = useState("ALL");
-    
+
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [basket, setBasket] = useState([]);
     const [testLink, setTestLink] = useState("");
-
     const refreshData = async () => {
         try {
-            const url = selectedTest === "ALL" 
-                ? 'http://localhost:5000/api/get_results' 
+            const url = selectedTest === "ALL"
+                ? 'http://localhost:5000/api/get_results'
                 : `http://localhost:5000/api/get_results?test_id=${selectedTest}`;
-            
+
             const res = await fetch(url);
             const data = await res.json();
             setResults(data);
@@ -32,10 +31,10 @@ function Admin() {
 
     useEffect(() => {
         refreshData();
-        setPlayerFilter("ALL"); 
+        setPlayerFilter("ALL");
     }, [selectedTest]);
 
-    // Sorting Logic
+    // Sorting player logic
     const sortByPlayer = () => {
         const sorted = [...results].sort((a, b) => {
             const nameA = (a.player_name || a.player || "");
@@ -46,14 +45,14 @@ function Admin() {
         setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     };
 
-    // Filter Logic
+    // Filter by specific player
     const uniquePlayers = ["ALL", ...new Set(results.map(r => r.player_name || r.player).filter(Boolean))];
-    const filteredResults = playerFilter === "ALL" 
-        ? results 
+    const filteredResults = playerFilter === "ALL"
+        ? results
         : results.filter(r => (r.player_name || r.player) === playerFilter);
 
-    // Analytics Summary Logic
-    const avgDelta = filteredResults.length > 0 
+    // Analytics summary Logic
+    const avgDelta = filteredResults.length > 0
         ? (filteredResults.reduce((acc, curr) => acc + Math.abs(Number(curr.final_bid) - Number(curr.initial_guess)), 0) / filteredResults.length).toFixed(1)
         : 0;
 
@@ -85,18 +84,17 @@ function Admin() {
         });
         const data = await res.json();
         setTestLink(`${window.location.origin}/test/${data.test_id}`);
-        setBasket([]); 
+        setBasket([]);
         refreshData();
     };
 
     return (
         <div className="min-h-screen bg-[#020617] text-white p-8 font-sans">
             <div className="max-w-7xl mx-auto flex gap-8">
-                
-                {/* SIDEBAR: Experiment List */}
+                {/* Experiment list sidebar */}
                 <div className="w-64 shrink-0 space-y-4">
                     <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Active Experiments</h2>
-                    <button 
+                    <button
                         onClick={() => setSelectedTest("ALL")}
                         className={`w-full text-left p-3 rounded-xl text-xs font-bold transition-all border ${selectedTest === "ALL" ? 'bg-sky-500 text-black border-sky-500' : 'bg-slate-900 text-slate-400 border-slate-800'}`}
                     >
@@ -104,7 +102,7 @@ function Admin() {
                     </button>
                     <div className="space-y-2 overflow-y-auto max-h-[60vh] pr-2">
                         {availableTests.map(testId => (
-                            <button 
+                            <button
                                 key={testId}
                                 onClick={() => setSelectedTest(testId)}
                                 className={`w-full text-left p-3 rounded-xl text-[10px] font-mono transition-all border ${selectedTest === testId ? 'bg-sky-500 text-black border-sky-500' : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-600'}`}
@@ -114,19 +112,18 @@ function Admin() {
                         ))}
                     </div>
                 </div>
-
                 <div className="flex-grow">
-                    {/* HEADER SECTION */}
+                    {/* Header */}
                     <div className="flex justify-between items-center mb-8 border-b border-slate-800 pb-6">
                         <div>
                             <h1 className="text-2xl font-black text-sky-400 uppercase tracking-tighter">Researcher Console</h1>
                             <p className="text-slate-500 text-xs uppercase tracking-tight">Active Filter: <span className="text-white">{selectedTest}</span></p>
                         </div>
                         <div className="flex gap-4">
-                            {/* Filter Dropdown */}
+                            {/* Filter dropdown */}
                             <div className="flex flex-col">
                                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1 ml-1">Filter by Player</label>
-                                <select 
+                                <select
                                     value={playerFilter}
                                     onChange={(e) => setPlayerFilter(e.target.value)}
                                     className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-sky-400 outline-none focus:border-sky-500"
@@ -138,23 +135,22 @@ function Admin() {
                             <button onClick={refreshData} className="mt-auto bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-[10px] font-bold transition-all border border-slate-700">REFRESH</button>
                         </div>
                     </div>
-
-                    {/* TEST BUILDER SECTION: Creation & Basket */}
+                    {/* Test builder creation and basket */}
                     <div className="bg-slate-900 p-6 rounded-3xl border border-sky-500/10 mb-8 shadow-2xl">
                         <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Create New Test Cohort</h2>
                         <div className="grid grid-cols-2 gap-6">
                             <div>
-                                <input 
-                                    type="text" 
-                                    placeholder="Search players for test..." 
+                                <input
+                                    type="text"
+                                    placeholder="Search players for test..."
                                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-sky-500 outline-none"
                                     onChange={(e) => searchPlayers(e.target.value)}
                                 />
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     {searchResults.map(name => (
-                                        <button 
-                                            key={name} 
-                                            onClick={() => !basket.includes(name) && setBasket([...basket, name])} 
+                                        <button
+                                            key={name}
+                                            onClick={() => !basket.includes(name) && setBasket([...basket, name])}
                                             className="text-[9px] bg-slate-800 hover:bg-sky-500 hover:text-black p-2 rounded-lg transition-all font-bold uppercase"
                                         >
                                             {name} +
@@ -172,8 +168,8 @@ function Admin() {
                                         </span>
                                     ))}
                                 </div>
-                                <button 
-                                    onClick={handleCreateTest} 
+                                <button
+                                    onClick={handleCreateTest}
                                     disabled={basket.length === 0}
                                     className="w-full bg-sky-500 text-black text-[10px] font-black py-3 rounded-lg uppercase tracking-widest disabled:opacity-30"
                                 >
@@ -188,8 +184,7 @@ function Admin() {
                             </div>
                         )}
                     </div>
-
-                    {/* ANALYTICS SUMMARY: Dynamic based on Filter */}
+                    {/* Analytics based on filter */}
                     <div className="grid grid-cols-4 gap-4 mb-8">
                         <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
                             <p className="text-slate-500 text-[9px] font-black uppercase">Sample Size</p>
@@ -208,8 +203,7 @@ function Admin() {
                             <div className="text-3xl font-black text-slate-400 italic">LIVE</div>
                         </div>
                     </div>
-
-                    {/* DATA TABLE */}
+                    {/* Data table */}
                     <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
                         <table className="w-full text-left text-xs">
                             <thead className="bg-slate-950 text-slate-500 uppercase font-black border-b border-slate-800">
@@ -238,8 +232,8 @@ function Admin() {
                                         <td className="p-4">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-16 bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className="bg-sky-500 h-full transition-all duration-500" 
+                                                    <div
+                                                        className="bg-sky-500 h-full transition-all duration-500"
                                                         style={{ width: `${(r.bias_score || 0) * 100}%` }}
                                                     ></div>
                                                 </div>
@@ -259,5 +253,4 @@ function Admin() {
         </div>
     );
 }
-
 export default Admin;
