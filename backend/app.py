@@ -9,7 +9,7 @@ import pandas as pd
 app = Flask(__name__)
 CORS(app) 
 app.config['JSON_SORT_KEYS'] = False
-DB_PATH = r"C:\Users\nayee\OneDrive - Aston University\Desktop\CS3\FYP\FYP Workspace\VigiBall\backend\vigiball_v2.db"
+DB_PATH = r"C:\Users\nayee\OneDrive - Aston University\Desktop\CS3\FYP\FYP Workspace\VigiBall\backend\database\vigiball_v2.db"
 
 # Experiment data results
 @app.route('/api/get_results', methods=['GET'])

@@ -44,7 +44,7 @@ frontend/src/Participant.js: The core experimental UI, timer logic, and HCI trig
 
 frontend/src/Admin.js: Researcher console for data analytics and bias tracking.
 
-backend/vigiball_v2.db: The main database file used.
+backend/database/vigiball_v2.db: The main database file used.
 
 License
 This project was developed for academic purposes at Aston University. All player data is sourced from Kaggle (https://www.kaggle.com/hubertsidorowicz).

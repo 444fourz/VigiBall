@@ -6,7 +6,7 @@ import random
 
 # Setup database paths
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(CURRENT_DIR, '..', 'vigiball_v2.db')
+DB_PATH = os.path.join(CURRENT_DIR, '..', 'database', 'vigiball_v2.db')
 CSV_PATH_2425 = r"C:\Users\nayee\OneDrive - Aston University\Desktop\CS3\FYP\FYP Workspace\VigiBall\backend\players_data-2024_2025.csv"
 CSV_PATH_2526 = r"C:\Users\nayee\OneDrive - Aston University\Desktop\CS3\FYP\FYP Workspace\VigiBall\backend\players_data-2025_2026.csv"
 
